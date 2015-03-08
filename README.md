@@ -57,7 +57,8 @@ Call the `callback` function with the version of the server as a string.
 
 ## Example
 
-`var Nut = require('node-nut');
+```javascript
+var Nut = require('node-nut');
 
 oNut = new Nut(3493, 'localhost');
 
@@ -77,5 +78,5 @@ oNut.on('ready', function() {
 	});
 });
 
-oNut.start();`
-
+oNut.start();
+```
