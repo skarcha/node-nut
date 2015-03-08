@@ -1,0 +1,22 @@
+{
+  "name": "node-nut",
+  "description": "NodeJS client for NUT (Network UPS Tools)",
+  "author": "Antonio Pérez <aperez@skarcha.com>",
+  "main": "node-nut.js",
+  "files": [
+    "node-nut.js"
+  ],
+  "version": "0.1.0",
+  "homepage": "https://github.com/skarcha/node-nut",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/skarcha/node-nut.git"
+  },
+  "engines": {
+    "node": ">0.8.x",
+    "npm": ">1.1.x"
+  },
+  "keywords": [
+    "nut", "UPS", "power"
+  ]
+}
