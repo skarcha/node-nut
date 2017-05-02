@@ -203,13 +203,13 @@ function parseMinimalResult(data, callback) {
     if (callback) callback(null);
 }
 
-Nut.prototype.SetRWVar = function (ups, name, value) {
+Nut.prototype.SetRWVar = function (ups, name, value, callback) {
 	this.send('SET VAR ' + ups + ' ' + name + ' ' + value, function(data) {
         parseMinimalResult(data, callback);
     });
 };
 
-Nut.prototype.RunUPSCommand = function (ups, command) {
+Nut.prototype.RunUPSCommand = function (ups, command, callback) {
 	this.send('INSTCMD ' + ups + ' ' + command, function(data) {
         parseMinimalResult(data, callback);
     });
