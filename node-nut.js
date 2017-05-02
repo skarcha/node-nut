@@ -216,6 +216,20 @@ Nut.prototype.RunUPSCommand = function (ups, command, callback) {
     });
 };
 
+Nut.prototype.SetUsername = function (username, callback) {
+	this.send('USERNAME ' + username, function(data) {
+        this.status = 'idle';
+        parseMinimalResult(data, callback);
+    });
+};
+
+Nut.prototype.SetPassword = function (pwd, callback) {
+	this.send('PASSWORD ' + pwd, function(data) {
+        this.status = 'idle';
+        parseMinimalResult(data, callback);
+    });
+};
+
 Nut.prototype.Master = function (ups, callback) {
 	this.send('MASTER ' + ups, function(data) {
         this.status = 'idle';
