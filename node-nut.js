@@ -194,26 +194,30 @@ Nut.prototype.GetCommandDescription = function (ups, command, callback) {
     });
 };
 
+function parseMinimalResult(data, callback) {
+    this.status = 'idle';
+    if (data.indexOf('ERR') === 0) {
+        data = data.substring(4);
+        if (callback) callback(data);
+    }
+    if (callback) callback(null);
+}
+
 Nut.prototype.SetRWVar = function (ups, name, value) {
-	this.send('SET VAR ' + ups + ' ' + name + ' ' + value);
+	this.send('SET VAR ' + ups + ' ' + name + ' ' + value, function(data) {
+        parseMinimalResult(data, callback);
+    });
 };
 
 Nut.prototype.RunUPSCommand = function (ups, command) {
-	this.send('INSTCMD ' + ups + ' ' + command);
+	this.send('INSTCMD ' + ups + ' ' + command, function(data) {
+        parseMinimalResult(data, callback);
+    });
 };
 
 Nut.prototype.Master = function (ups, callback) {
 	this.send('MASTER ' + ups, function(data) {
-        this.status = 'idle';
-        if (data.indexOf('OK') === 0) {
-            callback(true, null);
-        }
-        else {
-            if (data.indexOf('ERR') === 0) {
-                data = data.substring(4);
-            }
-            callback(false, data);
-        }
+        parseMinimalResult(data, callback);
     });
 };
 
@@ -221,13 +225,13 @@ Nut.prototype.FSD = function (ups, callback) {
 	this.send('FSD ' + ups, function(data) {
         this.status = 'idle';
         if (data.indexOf('OK FSD-SET') === 0) {
-            callback(true, null);
+            callback(null);
         }
         else {
             if (data.indexOf('ERR') === 0) {
                 data = data.substring(4);
             }
-            callback(false, data);
+            callback(data);
         }
     });
 };
