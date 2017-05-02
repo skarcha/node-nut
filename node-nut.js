@@ -53,45 +53,38 @@ Nut.prototype.close = function () {
 	this.send('LOGOUT');
 };
 
+function parseKeyValueList(data, list_type, re, callback) {
+    var data_array = data.split('\n');
+    for (i = 0; i < data_array.length-1; i++) {
+        line = data_array[i];
+        if (line.indexOf('BEGIN LIST ' + list_type) === 0) {
+            vars = [];
+        }
+        else if (line.indexOf(list_type + ' ') === 0) {
+            matches = re.exec(line);
+            vars[matches[1]] = matches[2];
+        }
+        else if (line.indexOf('END LIST ' + list_type) === 0) {
+            callback(vars);
+        }
+    }
+}
+
 Nut.prototype.GetUPSList = function (callback) {
 	this.send('LIST UPS', function(data) {
-		var data_array = data.split('\n');
-		var re = /^UPS\s+(.+)\s+"(.+)"/;
-		for (i = 0; i < data_array.length-1; i++) {
-			line = data_array[i];
-			if (line.indexOf('BEGIN LIST UPS') === 0) {
-				vars = [];
-			}
-			else if (line.indexOf('UPS ') === 0) {
-				matches = re.exec(line);
-				vars[matches[1]] = matches[2];
-			}
-			else if (line.indexOf('END LIST UPS') === 0) {
-				this.status = 'idle';
-				callback(vars);
-			}
-		}
+        parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.+)"/, function(vars) {
+            this.status = 'idle';
+            callback(vars);
+        });
 	});
 };
 
 Nut.prototype.GetUPSVars = function (ups, callback) {
 	this.send('LIST VAR ' + ups, function(data) {
-		var data_array = data.split('\n');
-		var re = /^VAR\s+.+\s+(.+)\s+"(.+)"/;
-		for (i = 0; i < data_array.length-1; i++) {
-			line = data_array[i];
-			if (line.indexOf('BEGIN LIST VAR') === 0) {
-				vars = [];
-			}
-			else if (line.indexOf('VAR ' + ups) === 0) {
-				matches = re.exec(line);
-				vars[matches[1]] = matches[2];
-			}
-			else if (line.indexOf('END LIST VAR') === 0) {
-				this.status = 'idle';
-				callback(vars);
-			}
-		}
+        parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
+            this.status = 'idle';
+            callback(vars);
+        });
 	});
 };
 
@@ -104,7 +97,7 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 			if (line.indexOf('BEGIN LIST CMD') === 0) {
 				commands = [];
 			}
-			else if (line.indexOf('CMD ') === 0) {
+			else if (line.indexOf('CMD ' + ups) === 0) {
 				matches = re.exec(line);
 				commands.push(matches[1]);
 			}
@@ -116,8 +109,88 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 	});
 };
 
-Nut.prototype.GetRWVars = function (ups) {
-	this.send('LIST RW ' + ups);
+Nut.prototype.GetRWVars = function (ups, callback) {
+	this.send('LIST RW ' + ups, function(data) {
+        parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
+            this.status = 'idle';
+            callback(vars);
+        });
+	});
+};
+
+Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
+	this.send('LIST ENUM ' + ups + ' ' + name, function(data) {
+		var data_array = data.split('\n');
+		var re = /^ENUM\s+.+\s+.+\s+"(.+)"/;
+		for (i = 0; i < data_array.length-1; i++) {
+			line = data_array[i];
+			if (line.indexOf('BEGIN LIST ENUM') === 0) {
+				enums = [];
+			}
+			else if (line.indexOf('ENUM ' + ups + ' ' + name) === 0) {
+				matches = re.exec(line);
+				enums.push(matches[1]);
+			}
+			else if (line.indexOf('END LIST ENUM') === 0) {
+				this.status = 'idle';
+				callback(enums);
+			}
+		}
+	});
+};
+
+Nut.prototype.GetRangesForVar = function (ups, name, callback) {
+	this.send('LIST RANGE ' + ups + ' ' + name, function(data) {
+		var data_array = data.split('\n');
+		var re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
+		for (i = 0; i < data_array.length-1; i++) {
+			line = data_array[i];
+			if (line.indexOf('BEGIN LIST RANGE') === 0) {
+				ranges = [];
+			}
+			else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
+				matches = re.exec(line);
+				ranges.push({
+                    'min': matches[1],
+                    'max': matches[2]
+                });
+			}
+			else if (line.indexOf('END LIST RANGE') === 0) {
+				this.status = 'idle';
+				callback(ranges);
+			}
+		}
+	});
+};
+
+Nut.prototype.GetVarType = function (ups, name, callback) {
+	this.send('GET TYPE ' + ups + ' ' + name, function(data) {
+        this.status = 'idle';
+        var re = /^TYPE\s+.+\s+.+\s+(.+)/;
+        matches = re.exec(data);
+        if (matches && matches[1]) callback(matches[1]);
+          else callback(null);
+    });
+};
+
+Nut.prototype.GetVarDescription = function (ups, name, callback) {
+	this.send('GET DESC ' + ups + ' ' + name, function(data) {
+        this.status = 'idle';
+        var re = /^DESC\s+.+\s+.+\s+"(.+)"/;
+        matches = re.exec(data);
+        if (matches && matches[1]) callback(matches[1]);
+          else callback(null);
+    });
+};
+
+Nut.prototype.GetCommandDescription = function (ups, command, callback) {
+	this.send('GET CMDDESC ' + ups + ' ' + command, function(data) {
+        this.status = 'idle';
+        var re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
+        matches = re.exec(data);
+        if (matches && matches[1]) callback(matches[1]);
+          else callback(null);
+    });
 };
 
 Nut.prototype.SetRWVar = function (ups, name, value) {
@@ -128,8 +201,34 @@ Nut.prototype.RunUPSCommand = function (ups, command) {
 	this.send('INSTCMD ' + ups + ' ' + command);
 };
 
-Nut.prototype.FSD = function (ups) {
-	this.send('MASTER ' + ups);
+Nut.prototype.Master = function (ups, callback) {
+	this.send('MASTER ' + ups, function(data) {
+        this.status = 'idle';
+        if (data.indexOf('OK') === 0) {
+            callback(true, null);
+        }
+        else {
+            if (data.indexOf('ERR') === 0) {
+                data = data.substring(4);
+            }
+            callback(false, data);
+        }
+    });
+};
+
+Nut.prototype.FSD = function (ups, callback) {
+	this.send('FSD ' + ups, function(data) {
+        this.status = 'idle';
+        if (data.indexOf('OK FSD-SET') === 0) {
+            callback(true, null);
+        }
+        else {
+            if (data.indexOf('ERR') === 0) {
+                data = data.substring(4);
+            }
+            callback(false, data);
+        }
+    });
 };
 
 Nut.prototype.help = function (callback) {
@@ -146,6 +245,30 @@ Nut.prototype.ver = function (callback) {
 	});
 };
 
+Nut.prototype.netVer = function (callback) {
+	this.send('NETVER', function(data) {
+		this.status = 'idle';
+		callback(data);
+	});
+};
+
 Nut.prototype.ListClients = function (ups) {
-	this.send('LIST CLIENTS ' + ups);
+	this.send('LIST CLIENT ' + ups, function(data) {
+		var data_array = data.split('\n');
+		var re = /^CLIENT\s+.+\s+(.+)/;
+		for (i = 0; i < data_array.length-1; i++) {
+			line = data_array[i];
+			if (line.indexOf('BEGIN LIST CLIENT') === 0) {
+				clients = [];
+			}
+			else if (line.indexOf('CLIENT ' + ups) === 0) {
+				matches = re.exec(line);
+				clients.push(matches[1]);
+			}
+			else if (line.indexOf('END LIST CLIENT') === 0) {
+				this.status = 'idle';
+				callback(clients);
+			}
+		}
+	});
 };
