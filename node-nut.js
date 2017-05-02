@@ -51,6 +51,7 @@ Nut.prototype.send = function (cmd, parseFunc) {
 
 Nut.prototype.close = function () {
 	this.send('LOGOUT');
+    this._client.end();
 };
 
 function parseKeyValueList(data, list_type, re, callback) {
