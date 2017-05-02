@@ -195,7 +195,6 @@ Nut.prototype.GetCommandDescription = function (ups, command, callback) {
 };
 
 function parseMinimalResult(data, callback) {
-    this.status = 'idle';
     if (data.indexOf('ERR') === 0) {
         data = data.substring(4);
         if (callback) callback(data);
@@ -205,18 +204,21 @@ function parseMinimalResult(data, callback) {
 
 Nut.prototype.SetRWVar = function (ups, name, value, callback) {
 	this.send('SET VAR ' + ups + ' ' + name + ' ' + value, function(data) {
+        this.status = 'idle';
         parseMinimalResult(data, callback);
     });
 };
 
 Nut.prototype.RunUPSCommand = function (ups, command, callback) {
 	this.send('INSTCMD ' + ups + ' ' + command, function(data) {
+        this.status = 'idle';
         parseMinimalResult(data, callback);
     });
 };
 
 Nut.prototype.Master = function (ups, callback) {
 	this.send('MASTER ' + ups, function(data) {
+        this.status = 'idle';
         parseMinimalResult(data, callback);
     });
 };
