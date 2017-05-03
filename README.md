@@ -80,3 +80,7 @@ oNut.on('ready', function() {
 
 oNut.start();
 ```
+
+## Links
+
+Protocol: http://networkupstools.org/docs/developer-guide.chunked/ar01s09.html

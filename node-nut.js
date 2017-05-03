@@ -51,41 +51,41 @@ Nut.prototype.send = function (cmd, parseFunc) {
 
 Nut.prototype.close = function () {
 	this.send('LOGOUT');
-    this._client.end();
+	this._client.end();
 };
 
 function parseKeyValueList(data, list_type, re, callback) {
-    var data_array = data.split('\n');
-    for (i = 0; i < data_array.length-1; i++) {
-        line = data_array[i];
-        if (line.indexOf('BEGIN LIST ' + list_type) === 0) {
-            vars = [];
-        }
-        else if (line.indexOf(list_type + ' ') === 0) {
-            matches = re.exec(line);
-            vars[matches[1]] = matches[2];
-        }
-        else if (line.indexOf('END LIST ' + list_type) === 0) {
-            callback(vars);
-        }
-    }
+	var data_array = data.split('\n');
+	for (i = 0; i < data_array.length-1; i++) {
+		line = data_array[i];
+		if (line.indexOf('BEGIN LIST ' + list_type) === 0) {
+			vars = [];
+		}
+		else if (line.indexOf(list_type + ' ') === 0) {
+			matches = re.exec(line);
+			vars[matches[1]] = matches[2];
+		}
+		else if (line.indexOf('END LIST ' + list_type) === 0) {
+			callback(vars);
+		}
+	}
 }
 
 Nut.prototype.GetUPSList = function (callback) {
 	this.send('LIST UPS', function(data) {
-        parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.+)"/, function(vars) {
-            this.status = 'idle';
-            callback(vars);
-        });
+		parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.+)"/, function(vars) {
+			this.status = 'idle';
+			callback(vars);
+		});
 	});
 };
 
 Nut.prototype.GetUPSVars = function (ups, callback) {
 	this.send('LIST VAR ' + ups, function(data) {
-        parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
-            this.status = 'idle';
-            callback(vars);
-        });
+		parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
+			this.status = 'idle';
+			callback(vars);
+		});
 	});
 };
 
@@ -112,10 +112,10 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 
 Nut.prototype.GetRWVars = function (ups, callback) {
 	this.send('LIST RW ' + ups, function(data) {
-        parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
-            this.status = 'idle';
-            callback(vars);
-        });
+		parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
+			this.status = 'idle';
+			callback(vars);
+		});
 	});
 };
 
@@ -152,9 +152,9 @@ Nut.prototype.GetRangesForVar = function (ups, name, callback) {
 			else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
 				matches = re.exec(line);
 				ranges.push({
-                    'min': matches[1],
-                    'max': matches[2]
-                });
+					'min': matches[1],
+					'max': matches[2]
+				});
 			}
 			else if (line.indexOf('END LIST RANGE') === 0) {
 				this.status = 'idle';
@@ -166,90 +166,90 @@ Nut.prototype.GetRangesForVar = function (ups, name, callback) {
 
 Nut.prototype.GetVarType = function (ups, name, callback) {
 	this.send('GET TYPE ' + ups + ' ' + name, function(data) {
-        this.status = 'idle';
-        var re = /^TYPE\s+.+\s+.+\s+(.+)/;
-        matches = re.exec(data);
-        if (matches && matches[1]) callback(matches[1]);
-          else callback(null);
-    });
+		this.status = 'idle';
+		var re = /^TYPE\s+.+\s+.+\s+(.+)/;
+		matches = re.exec(data);
+		if (matches && matches[1]) callback(matches[1]);
+		  else callback(null);
+	});
 };
 
 Nut.prototype.GetVarDescription = function (ups, name, callback) {
 	this.send('GET DESC ' + ups + ' ' + name, function(data) {
-        this.status = 'idle';
-        var re = /^DESC\s+.+\s+.+\s+"(.+)"/;
-        matches = re.exec(data);
-        if (matches && matches[1]) callback(matches[1]);
-          else callback(null);
-    });
+		this.status = 'idle';
+		var re = /^DESC\s+.+\s+.+\s+"(.+)"/;
+		matches = re.exec(data);
+		if (matches && matches[1]) callback(matches[1]);
+		  else callback(null);
+	});
 };
 
 Nut.prototype.GetCommandDescription = function (ups, command, callback) {
 	this.send('GET CMDDESC ' + ups + ' ' + command, function(data) {
-        this.status = 'idle';
-        var re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
-        matches = re.exec(data);
-        if (matches && matches[1]) callback(matches[1]);
-          else callback(null);
-    });
+		this.status = 'idle';
+		var re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
+		matches = re.exec(data);
+		if (matches && matches[1]) callback(matches[1]);
+		  else callback(null);
+	});
 };
 
 function parseMinimalResult(data, callback) {
-    if (data.indexOf('ERR') === 0) {
-        data = data.substring(4);
-        if (callback) callback(data);
-    }
-    if (callback) callback(null);
+	if (data.indexOf('ERR') === 0) {
+		data = data.substring(4);
+		if (callback) callback(data);
+	}
+	if (callback) callback(null);
 }
 
 Nut.prototype.SetRWVar = function (ups, name, value, callback) {
 	this.send('SET VAR ' + ups + ' ' + name + ' ' + value, function(data) {
-        this.status = 'idle';
-        parseMinimalResult(data, callback);
-    });
+		this.status = 'idle';
+		parseMinimalResult(data, callback);
+	});
 };
 
 Nut.prototype.RunUPSCommand = function (ups, command, callback) {
 	this.send('INSTCMD ' + ups + ' ' + command, function(data) {
-        this.status = 'idle';
-        parseMinimalResult(data, callback);
-    });
+		this.status = 'idle';
+		parseMinimalResult(data, callback);
+	});
 };
 
 Nut.prototype.SetUsername = function (username, callback) {
 	this.send('USERNAME ' + username, function(data) {
-        this.status = 'idle';
-        parseMinimalResult(data, callback);
-    });
+		this.status = 'idle';
+		parseMinimalResult(data, callback);
+	});
 };
 
 Nut.prototype.SetPassword = function (pwd, callback) {
 	this.send('PASSWORD ' + pwd, function(data) {
-        this.status = 'idle';
-        parseMinimalResult(data, callback);
-    });
+		this.status = 'idle';
+		parseMinimalResult(data, callback);
+	});
 };
 
 Nut.prototype.Master = function (ups, callback) {
 	this.send('MASTER ' + ups, function(data) {
-        this.status = 'idle';
-        parseMinimalResult(data, callback);
-    });
+		this.status = 'idle';
+		parseMinimalResult(data, callback);
+	});
 };
 
 Nut.prototype.FSD = function (ups, callback) {
 	this.send('FSD ' + ups, function(data) {
-        this.status = 'idle';
-        if (data.indexOf('OK FSD-SET') === 0) {
-            callback(null);
-        }
-        else {
-            if (data.indexOf('ERR') === 0) {
-                data = data.substring(4);
-            }
-            callback(data);
-        }
-    });
+		this.status = 'idle';
+		if (data.indexOf('OK FSD-SET') === 0) {
+			callback(null);
+		}
+		else {
+			if (data.indexOf('ERR') === 0) {
+				data = data.substring(4);
+			}
+			callback(data);
+		}
+	});
 };
 
 Nut.prototype.help = function (callback) {
