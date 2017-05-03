@@ -66,25 +66,30 @@ function parseKeyValueList(data, list_type, re, callback) {
 			vars[matches[1]] = matches[2];
 		}
 		else if (line.indexOf('END LIST ' + list_type) === 0) {
-			callback(vars);
+			callback(vars, null);
+			break;
+		}
+		else if (line.indexOf('ERR') === 0) {
+			callback(null, line.substring(4));
+			break;
 		}
 	}
 }
 
 Nut.prototype.GetUPSList = function (callback) {
 	this.send('LIST UPS', function(data) {
-		parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.+)"/, function(vars) {
+		parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.+)"/, function(vars, err) {
 			this.status = 'idle';
-			callback(vars);
+			callback(vars, err);
 		});
 	});
 };
 
 Nut.prototype.GetUPSVars = function (ups, callback) {
 	this.send('LIST VAR ' + ups, function(data) {
-		parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
+		parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.+)"/, function(vars, err) {
 			this.status = 'idle';
-			callback(vars);
+			callback(vars, err);
 		});
 	});
 };
@@ -104,7 +109,13 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 			}
 			else if (line.indexOf('END LIST CMD') === 0) {
 				this.status = 'idle';
-				callback(commands);
+				callback(commands, null);
+				break;
+			}
+			else if (line.indexOf('ERR') === 0) {
+				this.status = 'idle';
+				callback(null, line.substring(4));
+				break;
 			}
 		}
 	});
@@ -112,9 +123,9 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 
 Nut.prototype.GetRWVars = function (ups, callback) {
 	this.send('LIST RW ' + ups, function(data) {
-		parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.+)"/, function(vars) {
+		parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.+)"/, function(vars, err) {
 			this.status = 'idle';
-			callback(vars);
+			callback(vars, err);
 		});
 	});
 };
@@ -134,7 +145,13 @@ Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
 			}
 			else if (line.indexOf('END LIST ENUM') === 0) {
 				this.status = 'idle';
-				callback(enums);
+				callback(enums, null);
+				break;
+			}
+			else if (line.indexOf('ERR') === 0) {
+				this.status = 'idle';
+				callback(null, line.substring(4));
+				break;
 			}
 		}
 	});
@@ -158,7 +175,13 @@ Nut.prototype.GetRangesForVar = function (ups, name, callback) {
 			}
 			else if (line.indexOf('END LIST RANGE') === 0) {
 				this.status = 'idle';
-				callback(ranges);
+				callback(ranges, null);
+				break;
+			}
+			else if (line.indexOf('ERR') === 0) {
+				this.status = 'idle';
+				callback(null, line.substring(4));
+				break;
 			}
 		}
 	});
@@ -169,8 +192,15 @@ Nut.prototype.GetVarType = function (ups, name, callback) {
 		this.status = 'idle';
 		var re = /^TYPE\s+.+\s+.+\s+(.+)/;
 		matches = re.exec(data);
-		if (matches && matches[1]) callback(matches[1]);
-		  else callback(null);
+		if (matches && matches[1]) {
+			callback(matches[1], null);
+		}
+		else if (data.indexOf('ERR') === 0) {
+			callback(null, data.substring(4));
+		}
+		else {
+			callback(null, null);
+		}
 	});
 };
 
@@ -179,8 +209,15 @@ Nut.prototype.GetVarDescription = function (ups, name, callback) {
 		this.status = 'idle';
 		var re = /^DESC\s+.+\s+.+\s+"(.+)"/;
 		matches = re.exec(data);
-		if (matches && matches[1]) callback(matches[1]);
-		  else callback(null);
+		if (matches && matches[1]) {
+			callback(matches[1], null);
+		}
+		else if (data.indexOf('ERR') === 0) {
+			callback(null, data.substring(4));
+		}
+		else {
+			callback(null, null);
+		}
 	});
 };
 
@@ -189,8 +226,15 @@ Nut.prototype.GetCommandDescription = function (ups, command, callback) {
 		this.status = 'idle';
 		var re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
 		matches = re.exec(data);
-		if (matches && matches[1]) callback(matches[1]);
-		  else callback(null);
+		if (matches && matches[1]) {
+			callback(matches[1], null);
+		}
+		else if (data.indexOf('ERR') === 0) {
+			callback(null, data.substring(4));
+		}
+		else {
+			callback(null, null);
+		}
 	});
 };
 
@@ -288,7 +332,13 @@ Nut.prototype.ListClients = function (ups) {
 			}
 			else if (line.indexOf('END LIST CLIENT') === 0) {
 				this.status = 'idle';
-				callback(clients);
+				callback(clients, null);
+				break;
+			}
+			else if (line.indexOf('ERR') === 0) {
+				this.status = 'idle';
+				callback(null, line.substring(4));
+				break;
 			}
 		}
 	});
