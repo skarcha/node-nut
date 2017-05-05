@@ -2,6 +2,13 @@
 
 Node-NUT is a NodeJS module that implements a NUT (Network UPS Tools) client.
 
+## Version compatibility information
+v1.0.0 introduce callbacks into all functions including a second "error" parameter for all gameaccounts. This error parameter is null on success or a text on error. Please see the updated method documentation below.
+
+This change should not break existing code because you can simply ignore the second parameter, but there is one change coming with it:
+
+When with v0.0.x an error occured in one of the "Get-List-Of" methods then the callback was pot. never called at all. This has changed now because now the callback is also called in errorcases, but then with an empty object/list in return. So you may want to include error handling code that not strange things happens in error cases.
+
 ## Events
 
 ### ready
