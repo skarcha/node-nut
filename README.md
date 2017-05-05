@@ -3,7 +3,7 @@
 Node-NUT is a NodeJS module that implements a NUT (Network UPS Tools) client.
 
 ## Version compatibility information
-v1.0.0 introduce callbacks into all functions including a second "error" parameter for all methods. This error parameter is null on success or a text on error. Please see the updated method documentation below.
+v1.0.0 introduce callbacks into all functions including a second "error" parameter. This error parameter is null on success or a text on error. Please see the updated method documentation below.
 
 This change should not break existing code because you can simply ignore the second parameter, but there is one change coming with it:
 
