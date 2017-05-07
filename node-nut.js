@@ -47,6 +47,9 @@ Nut.prototype.send = function (cmd, parseFunc) {
 		this.parseFunc = parseFunc;
 		this._client.write(cmd + '\n');
 	}
+    else if (parseFunc) {
+        parseFunc('ERR Old communication still running');
+    }
 };
 
 Nut.prototype.close = function () {
@@ -55,7 +58,8 @@ Nut.prototype.close = function () {
 };
 
 function parseKeyValueList(data, list_type, re, callback) {
-	var data_array = data.split('\n');
+    if (!data) data = 'ERR Empty response';
+    var data_array = data.split('\n');
 	for (i = 0; i < data_array.length-1; i++) {
 		line = data_array[i];
 		if (line.indexOf('BEGIN LIST ' + list_type) === 0) {
@@ -96,6 +100,7 @@ Nut.prototype.GetUPSVars = function (ups, callback) {
 
 Nut.prototype.GetUPSCommands = function (ups, callback) {
 	this.send('LIST CMD ' + ups, function(data) {
+        if (!data) data = 'ERR Empty response';
 		var data_array = data.split('\n');
 		var re = /^CMD\s+.+\s+(.+)/;
 		for (i = 0; i < data_array.length-1; i++) {
@@ -132,6 +137,7 @@ Nut.prototype.GetRWVars = function (ups, callback) {
 
 Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
 	this.send('LIST ENUM ' + ups + ' ' + name, function(data) {
+        if (!data) data = 'ERR Empty response';
 		var data_array = data.split('\n');
 		var re = /^ENUM\s+.+\s+.+\s+"(.+)"/;
 		for (i = 0; i < data_array.length-1; i++) {
@@ -159,6 +165,7 @@ Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
 
 Nut.prototype.GetRangesForVar = function (ups, name, callback) {
 	this.send('LIST RANGE ' + ups + ' ' + name, function(data) {
+        if (!data) data = 'ERR Empty response';
 		var data_array = data.split('\n');
 		var re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
 		for (i = 0; i < data_array.length-1; i++) {
@@ -189,6 +196,7 @@ Nut.prototype.GetRangesForVar = function (ups, name, callback) {
 
 Nut.prototype.GetVarType = function (ups, name, callback) {
 	this.send('GET TYPE ' + ups + ' ' + name, function(data) {
+        if (!data) data = 'ERR Empty response';
 		this.status = 'idle';
 		var re = /^TYPE\s+.+\s+.+\s+(.+)/;
 		matches = re.exec(data);
@@ -206,6 +214,7 @@ Nut.prototype.GetVarType = function (ups, name, callback) {
 
 Nut.prototype.GetVarDescription = function (ups, name, callback) {
 	this.send('GET DESC ' + ups + ' ' + name, function(data) {
+        if (!data) data = 'ERR Empty response';
 		this.status = 'idle';
 		var re = /^DESC\s+.+\s+.+\s+"(.+)"/;
 		matches = re.exec(data);
@@ -223,6 +232,7 @@ Nut.prototype.GetVarDescription = function (ups, name, callback) {
 
 Nut.prototype.GetCommandDescription = function (ups, command, callback) {
 	this.send('GET CMDDESC ' + ups + ' ' + command, function(data) {
+        if (!data) data = 'ERR Empty response';
 		this.status = 'idle';
 		var re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
 		matches = re.exec(data);
@@ -283,6 +293,7 @@ Nut.prototype.Master = function (ups, callback) {
 
 Nut.prototype.FSD = function (ups, callback) {
 	this.send('FSD ' + ups, function(data) {
+        if (!data) data = 'ERR Empty response';
 		this.status = 'idle';
 		if (data.indexOf('OK FSD-SET') === 0) {
 			callback(null);
@@ -319,6 +330,7 @@ Nut.prototype.netVer = function (callback) {
 
 Nut.prototype.ListClients = function (ups) {
 	this.send('LIST CLIENT ' + ups, function(data) {
+        if (!data) data = 'ERR Empty response';
 		var data_array = data.split('\n');
 		var re = /^CLIENT\s+.+\s+(.+)/;
 		for (i = 0; i < data_array.length-1; i++) {
