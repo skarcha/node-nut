@@ -48,7 +48,7 @@ Nut.prototype.send = function (cmd, parseFunc) {
 		this._client.write(cmd + '\n');
 	}
     else if (parseFunc) {
-        parseFunc('ERR Old communication still running');
+        parseFunc('ERR Other communication still running\n');
     }
 };
 
@@ -58,8 +58,9 @@ Nut.prototype.close = function () {
 };
 
 function parseKeyValueList(data, list_type, re, callback) {
-    if (!data) data = 'ERR Empty response';
+    if (!data) data = 'ERR Empty response\n';
     var data_array = data.split('\n');
+    if (data_array.length === 1) data_array.push('');
 	for (i = 0; i < data_array.length-1; i++) {
 		line = data_array[i];
 		if (line.indexOf('BEGIN LIST ' + list_type) === 0) {
@@ -81,27 +82,31 @@ function parseKeyValueList(data, list_type, re, callback) {
 }
 
 Nut.prototype.GetUPSList = function (callback) {
-	this.send('LIST UPS', function(data) {
+    self = this;
+    this.send('LIST UPS', function(data) {
 		parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.+)"/, function(vars, err) {
-			this.status = 'idle';
+			self.status = 'idle';
 			callback(vars, err);
 		});
 	});
 };
 
 Nut.prototype.GetUPSVars = function (ups, callback) {
+    self = this;
 	this.send('LIST VAR ' + ups, function(data) {
 		parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.+)"/, function(vars, err) {
-			this.status = 'idle';
+			self.status = 'idle';
 			callback(vars, err);
 		});
 	});
 };
 
 Nut.prototype.GetUPSCommands = function (ups, callback) {
+    self = this;
 	this.send('LIST CMD ' + ups, function(data) {
-        if (!data) data = 'ERR Empty response';
+        if (!data) data = 'ERR Empty response\n';
 		var data_array = data.split('\n');
+        if (data_array.length === 1) data_array.push('');
 		var re = /^CMD\s+.+\s+(.+)/;
 		for (i = 0; i < data_array.length-1; i++) {
 			line = data_array[i];
@@ -113,12 +118,12 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 				commands.push(matches[1]);
 			}
 			else if (line.indexOf('END LIST CMD') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(commands, null);
 				break;
 			}
 			else if (line.indexOf('ERR') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(null, line.substring(4));
 				break;
 			}
@@ -127,18 +132,21 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 };
 
 Nut.prototype.GetRWVars = function (ups, callback) {
+    self = this;
 	this.send('LIST RW ' + ups, function(data) {
 		parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.+)"/, function(vars, err) {
-			this.status = 'idle';
+			self.status = 'idle';
 			callback(vars, err);
 		});
 	});
 };
 
 Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
+    self = this;
 	this.send('LIST ENUM ' + ups + ' ' + name, function(data) {
-        if (!data) data = 'ERR Empty response';
+        if (!data) data = 'ERR Empty response\n';
 		var data_array = data.split('\n');
+        if (data_array.length === 1) data_array.push('');
 		var re = /^ENUM\s+.+\s+.+\s+"(.+)"/;
 		for (i = 0; i < data_array.length-1; i++) {
 			line = data_array[i];
@@ -150,12 +158,12 @@ Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
 				enums.push(matches[1]);
 			}
 			else if (line.indexOf('END LIST ENUM') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(enums, null);
 				break;
 			}
 			else if (line.indexOf('ERR') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(null, line.substring(4));
 				break;
 			}
@@ -164,9 +172,11 @@ Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
 };
 
 Nut.prototype.GetRangesForVar = function (ups, name, callback) {
+    self = this;
 	this.send('LIST RANGE ' + ups + ' ' + name, function(data) {
-        if (!data) data = 'ERR Empty response';
+        if (!data) data = 'ERR Empty response\n';
 		var data_array = data.split('\n');
+        if (data_array.length === 1) data_array.push('');
 		var re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
 		for (i = 0; i < data_array.length-1; i++) {
 			line = data_array[i];
@@ -181,12 +191,12 @@ Nut.prototype.GetRangesForVar = function (ups, name, callback) {
 				});
 			}
 			else if (line.indexOf('END LIST RANGE') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(ranges, null);
 				break;
 			}
 			else if (line.indexOf('ERR') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(null, line.substring(4));
 				break;
 			}
@@ -195,9 +205,10 @@ Nut.prototype.GetRangesForVar = function (ups, name, callback) {
 };
 
 Nut.prototype.GetVarType = function (ups, name, callback) {
+    self = this;
 	this.send('GET TYPE ' + ups + ' ' + name, function(data) {
         if (!data) data = 'ERR Empty response';
-		this.status = 'idle';
+		self.status = 'idle';
 		var re = /^TYPE\s+.+\s+.+\s+(.+)/;
 		matches = re.exec(data);
 		if (matches && matches[1]) {
@@ -213,9 +224,10 @@ Nut.prototype.GetVarType = function (ups, name, callback) {
 };
 
 Nut.prototype.GetVarDescription = function (ups, name, callback) {
+    self = this;
 	this.send('GET DESC ' + ups + ' ' + name, function(data) {
         if (!data) data = 'ERR Empty response';
-		this.status = 'idle';
+		self.status = 'idle';
 		var re = /^DESC\s+.+\s+.+\s+"(.+)"/;
 		matches = re.exec(data);
 		if (matches && matches[1]) {
@@ -231,9 +243,10 @@ Nut.prototype.GetVarDescription = function (ups, name, callback) {
 };
 
 Nut.prototype.GetCommandDescription = function (ups, command, callback) {
+    self = this;
 	this.send('GET CMDDESC ' + ups + ' ' + command, function(data) {
         if (!data) data = 'ERR Empty response';
-		this.status = 'idle';
+		self.status = 'idle';
 		var re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
 		matches = re.exec(data);
 		if (matches && matches[1]) {
@@ -257,44 +270,50 @@ function parseMinimalResult(data, callback) {
 }
 
 Nut.prototype.SetRWVar = function (ups, name, value, callback) {
+    self = this;
 	this.send('SET VAR ' + ups + ' ' + name + ' ' + value, function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		parseMinimalResult(data, callback);
 	});
 };
 
 Nut.prototype.RunUPSCommand = function (ups, command, callback) {
+    self = this;
 	this.send('INSTCMD ' + ups + ' ' + command, function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		parseMinimalResult(data, callback);
 	});
 };
 
 Nut.prototype.SetUsername = function (username, callback) {
+    self = this;
 	this.send('USERNAME ' + username, function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		parseMinimalResult(data, callback);
 	});
 };
 
 Nut.prototype.SetPassword = function (pwd, callback) {
+    self = this;
 	this.send('PASSWORD ' + pwd, function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		parseMinimalResult(data, callback);
 	});
 };
 
 Nut.prototype.Master = function (ups, callback) {
+    self = this;
 	this.send('MASTER ' + ups, function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		parseMinimalResult(data, callback);
 	});
 };
 
 Nut.prototype.FSD = function (ups, callback) {
+    self = this;
 	this.send('FSD ' + ups, function(data) {
         if (!data) data = 'ERR Empty response';
-		this.status = 'idle';
+		self.status = 'idle';
 		if (data.indexOf('OK FSD-SET') === 0) {
 			callback(null);
 		}
@@ -308,30 +327,35 @@ Nut.prototype.FSD = function (ups, callback) {
 };
 
 Nut.prototype.help = function (callback) {
+    self = this;
 	this.send('HELP', function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		callback(data);
 	});
 };
 
 Nut.prototype.ver = function (callback) {
+    self = this;
 	this.send('VER', function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		callback(data);
 	});
 };
 
 Nut.prototype.netVer = function (callback) {
+    self = this;
 	this.send('NETVER', function(data) {
-		this.status = 'idle';
+		self.status = 'idle';
 		callback(data);
 	});
 };
 
 Nut.prototype.ListClients = function (ups) {
+    self = this;
 	this.send('LIST CLIENT ' + ups, function(data) {
-        if (!data) data = 'ERR Empty response';
+        if (!data) data = 'ERR Empty response\n';
 		var data_array = data.split('\n');
+        if (data_array.length === 1) data_array.push('');
 		var re = /^CLIENT\s+.+\s+(.+)/;
 		for (i = 0; i < data_array.length-1; i++) {
 			line = data_array[i];
@@ -343,12 +367,12 @@ Nut.prototype.ListClients = function (ups) {
 				clients.push(matches[1]);
 			}
 			else if (line.indexOf('END LIST CLIENT') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(clients, null);
 				break;
 			}
 			else if (line.indexOf('ERR') === 0) {
-				this.status = 'idle';
+				self.status = 'idle';
 				callback(null, line.substring(4));
 				break;
 			}
