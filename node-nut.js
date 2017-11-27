@@ -94,7 +94,7 @@ Nut.prototype.GetUPSList = function (callback) {
 Nut.prototype.GetUPSVars = function (ups, callback) {
     self = this;
 	this.send('LIST VAR ' + ups, function(data) {
-		parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.+)"/, function(vars, err) {
+		parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.*)"/, function(vars, err) {
 			self.status = 'idle';
 			callback(vars, err);
 		});
