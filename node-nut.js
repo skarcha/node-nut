@@ -84,7 +84,7 @@ function parseKeyValueList(data, list_type, re, callback) {
 Nut.prototype.GetUPSList = function (callback) {
     self = this;
     this.send('LIST UPS', function(data) {
-		parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.+)"/, function(vars, err) {
+		parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.*)"/, function(vars, err) {
 			self.status = 'idle';
 			callback(vars, err);
 		});
@@ -134,7 +134,7 @@ Nut.prototype.GetUPSCommands = function (ups, callback) {
 Nut.prototype.GetRWVars = function (ups, callback) {
     self = this;
 	this.send('LIST RW ' + ups, function(data) {
-		parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.+)"/, function(vars, err) {
+		parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.*)"/, function(vars, err) {
 			self.status = 'idle';
 			callback(vars, err);
 		});
@@ -147,7 +147,7 @@ Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
         if (!data) data = 'ERR Empty response\n';
 		var data_array = data.split('\n');
         if (data_array.length === 1) data_array.push('');
-		var re = /^ENUM\s+.+\s+.+\s+"(.+)"/;
+		var re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
 		for (i = 0; i < data_array.length-1; i++) {
 			line = data_array[i];
 			if (line.indexOf('BEGIN LIST ENUM') === 0) {
