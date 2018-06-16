@@ -28,9 +28,16 @@ Nut.prototype.start = function () {
 	this._client = net.createConnection (self._port, self._host, open);
 	this._client.setEncoding('ascii');
 
+	var dataInBuff = "";
+
 	this._client.on('data', function (data) {
+		dataInBuff += data;
+		if(dataInBuff.slice(-1) != "\n") {
+			return;
+		}
 		if (typeof(self.parseFunc) !== 'undefined') {
-			self.parseFunc(data);
+			self.parseFunc(dataInBuff);
+			dataInBuff = "";
 		}
 		else {
 			self.status = 'idle';
@@ -57,6 +64,7 @@ Nut.prototype.close = function () {
 	this._client.end();
 };
 
+var vars = [];
 function parseKeyValueList(data, list_type, re, callback) {
     if (!data) data = 'ERR Empty response\n';
     var data_array = data.split('\n');
