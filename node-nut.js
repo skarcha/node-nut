@@ -20,6 +20,7 @@ Nut.init = function (port, host) {
 Nut.prototype.start = function () {
 	var self = this;
 	self.status = 'idle';
+	self.dataInBuff = '';
 
 	function open () { self.emit('ready'); }
 	function error (err) { self.emit('error', err); }
@@ -28,16 +29,14 @@ Nut.prototype.start = function () {
 	this._client = net.createConnection (self._port, self._host, open);
 	this._client.setEncoding('ascii');
 
-	var dataInBuff = "";
-
 	this._client.on('data', function (data) {
-		dataInBuff += data;
-		if(dataInBuff.slice(-1) != "\n") {
+		self.dataInBuff += data;
+		if(self.dataInBuff.slice(-1) != "\n") {
 			return;
 		}
 		if (typeof(self.parseFunc) !== 'undefined') {
-			self.parseFunc(dataInBuff);
-			dataInBuff = "";
+			self.parseFunc(self.dataInBuff);
+			self.dataInBuff = '';
 		}
 		else {
 			self.status = 'idle';
