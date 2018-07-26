@@ -20,6 +20,7 @@ Nut.init = function (port, host) {
 Nut.prototype.start = function () {
 	var self = this;
 	self.status = 'idle';
+	self.dataInBuff = '';
 
 	function open () { self.emit('ready'); }
 	function error (err) { self.emit('error', err); }
@@ -29,8 +30,13 @@ Nut.prototype.start = function () {
 	this._client.setEncoding('ascii');
 
 	this._client.on('data', function (data) {
+		self.dataInBuff += data;
+		if(self.dataInBuff.slice(-1) != "\n") {
+			return;
+		}
 		if (typeof(self.parseFunc) !== 'undefined') {
-			self.parseFunc(data);
+			self.parseFunc(self.dataInBuff);
+			self.dataInBuff = '';
 		}
 		else {
 			self.status = 'idle';
@@ -57,6 +63,7 @@ Nut.prototype.close = function () {
 	this._client.end();
 };
 
+var vars = [];
 function parseKeyValueList(data, list_type, re, callback) {
     if (!data) data = 'ERR Empty response\n';
     var data_array = data.split('\n');
