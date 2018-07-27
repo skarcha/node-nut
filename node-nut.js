@@ -31,9 +31,11 @@ Nut.prototype.start = function () {
 
 	this._client.on('data', function (data) {
 		self.dataInBuff += data;
-		if(self.dataInBuff.slice(-1) != "\n") {
+
+		if (self.dataInBuff.slice(-1) !== '\n') {
 			return;
 		}
+
 		if (typeof(self.parseFunc) !== 'undefined') {
 			self.parseFunc(self.dataInBuff);
 			self.dataInBuff = '';
