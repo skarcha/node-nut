@@ -6,7 +6,7 @@
   "files": [
     "node-nut.js"
   ],
-  "version": "1.0.2",
+  "version": "1.0.3",
   "homepage": "https://github.com/skarcha/node-nut",
   "repository": {
     "type": "git",
