@@ -2,6 +2,9 @@
   "name": "node-nut",
   "description": "NodeJS client for NUT (Network UPS Tools)",
   "author": "Antonio Pérez <aperez@skarcha.com>",
+  "contributors": [
+    "Simon Christmann <simon@christmann.email>"
+  ],
   "main": "node-nut.js",
   "files": [
     "node-nut.js"
@@ -20,5 +23,11 @@
     "nut",
     "UPS",
     "power"
-  ]
+  ],
+  "devDependencies": {
+    "xo": "^0.25.3"
+  },
+  "xo": {
+    "space": 4
+  }
 }
