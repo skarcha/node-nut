@@ -34,11 +34,11 @@ class Nut extends EventEmitter {
                 return;
             }
 
-            if (typeof (this.parseFunc) !== 'undefined') {
+            if (typeof (this.parseFunc) === 'undefined') {
+                this.status = 'idle';
+            } else {
                 this.parseFunc(this.dataInBuff);
                 this.dataInBuff = '';
-            } else {
-                this.status = 'idle';
             }
         });
 
@@ -47,7 +47,7 @@ class Nut extends EventEmitter {
     }
 
     send(cmd, parseFunc) {
-        if (this.status == 'idle') {
+        if (this.status === 'idle') {
             this.status = 'waiting';
             this.parseFunc = parseFunc;
             this._client.write(cmd + '\n');
@@ -61,30 +61,29 @@ class Nut extends EventEmitter {
         this._client.end();
     }
 
-    _parseKeyValueList(data, list_type, re, callback) {
-        let vars = [];
-
+    _parseKeyValueList(data, listType, re, callback) {
         if (!data) {
             data = 'ERR Empty response\n';
         }
 
-        const data_array = data.split('\n');
-        if (data_array.length === 1) {
-            data_array.push('');
+        const dataArray = data.split('\n');
+        if (dataArray.length === 1) {
+            dataArray.push('');
         }
 
-        for (let i = 0; i < data_array.length - 1; i++) {
-            const line = data_array[i];
-            if (line.indexOf('BEGIN LIST ' + list_type) === 0) {
-                vars = [];
-            } else if (line.indexOf(list_type + ' ') === 0) {
+        const vars = [];
+        for (let i = 0; i < dataArray.length - 1; i++) {
+            const line = dataArray[i];
+            if (line.indexOf('BEGIN LIST ' + listType) === 0) {
+                // ...
+            } else if (line.indexOf(listType + ' ') === 0) {
                 const matches = re.exec(line);
                 vars[matches[1]] = matches[2];
-            } else if (line.indexOf('END LIST ' + list_type) === 0) {
+            } else if (line.indexOf('END LIST ' + listType) === 0) {
                 callback(vars, null);
                 break;
             } else if (line.indexOf('ERR') === 0) {
-                callback(null, line.substring(4));
+                callback(null, line.slice(4));
                 break;
             }
         }
@@ -114,16 +113,17 @@ class Nut extends EventEmitter {
                 data = 'ERR Empty response\n';
             }
 
-            const data_array = data.split('\n');
-            if (data_array.length === 1) {
-                data_array.push('');
+            const dataArray = data.split('\n');
+            if (dataArray.length === 1) {
+                dataArray.push('');
             }
 
             const re = /^CMD\s+.+\s+(.+)/;
-            for (i = 0; i < data_array.length - 1; i++) {
-                const line = data_array[i];
+            const commands = [];
+            for (let i = 0; i < dataArray.length - 1; i++) {
+                const line = dataArray[i];
                 if (line.indexOf('BEGIN LIST CMD') === 0) {
-                    commands = [];
+                    // ...
                 } else if (line.indexOf('CMD ' + ups) === 0) {
                     const matches = re.exec(line);
                     commands.push(matches[1]);
@@ -133,7 +133,7 @@ class Nut extends EventEmitter {
                     break;
                 } else if (line.indexOf('ERR') === 0) {
                     this.status = 'idle';
-                    callback(null, line.substring(4));
+                    callback(null, line.slice(4));
                     break;
                 }
             }
@@ -155,16 +155,17 @@ class Nut extends EventEmitter {
                 data = 'ERR Empty response\n';
             }
 
-            const data_array = data.split('\n');
-            if (data_array.length === 1) {
-                data_array.push('');
+            const dataArray = data.split('\n');
+            if (dataArray.length === 1) {
+                dataArray.push('');
             }
 
             const re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
-            for (let i = 0; i < data_array.length - 1; i++) {
-                const line = data_array[i];
+            const enums = [];
+            for (let i = 0; i < dataArray.length - 1; i++) {
+                const line = dataArray[i];
                 if (line.indexOf('BEGIN LIST ENUM') === 0) {
-                    const enums = [];
+                    // ...
                 } else if (line.indexOf('ENUM ' + ups + ' ' + name) === 0) {
                     const matches = re.exec(line);
                     enums.push(matches[1]);
@@ -174,7 +175,7 @@ class Nut extends EventEmitter {
                     break;
                 } else if (line.indexOf('ERR') === 0) {
                     this.status = 'idle';
-                    callback(null, line.substring(4));
+                    callback(null, line.slice(4));
                     break;
                 }
             }
@@ -187,16 +188,17 @@ class Nut extends EventEmitter {
                 data = 'ERR Empty response\n';
             }
 
-            const data_array = data.split('\n');
-            if (data_array.length === 1) {
-                data_array.push('');
+            const dataArray = data.split('\n');
+            if (dataArray.length === 1) {
+                dataArray.push('');
             }
 
             const re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
-            for (let i = 0; i < data_array.length - 1; i++) {
-                const line = data_array[i];
+            const ranges = [];
+            for (let i = 0; i < dataArray.length - 1; i++) {
+                const line = dataArray[i];
                 if (line.indexOf('BEGIN LIST RANGE') === 0) {
-                    const ranges = [];
+                    // ...
                 } else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
                     const matches = re.exec(line);
                     ranges.push({
@@ -209,7 +211,7 @@ class Nut extends EventEmitter {
                     break;
                 } else if (line.indexOf('ERR') === 0) {
                     this.status = 'idle';
-                    callback(null, line.substring(4));
+                    callback(null, line.slice(4));
                     break;
                 }
             }
@@ -228,7 +230,7 @@ class Nut extends EventEmitter {
             if (matches && matches[1]) {
                 callback(matches[1], null);
             } else if (data.indexOf('ERR') === 0) {
-                callback(null, data.substring(4));
+                callback(null, data.slice(4));
             } else {
                 callback(null, null);
             }
@@ -247,7 +249,7 @@ class Nut extends EventEmitter {
             if (matches && matches[1]) {
                 callback(matches[1], null);
             } else if (data.indexOf('ERR') === 0) {
-                callback(null, data.substring(4));
+                callback(null, data.slice(4));
             } else {
                 callback(null, null);
             }
@@ -266,7 +268,7 @@ class Nut extends EventEmitter {
             if (matches && matches[1]) {
                 callback(matches[1], null);
             } else if (data.indexOf('ERR') === 0) {
-                callback(null, data.substring(4));
+                callback(null, data.slice(4));
             } else {
                 callback(null, null);
             }
@@ -275,7 +277,7 @@ class Nut extends EventEmitter {
 
     _parseMinimalResult(data, callback) {
         if (data.indexOf('ERR') === 0) {
-            data = data.substring(4);
+            data = data.slice(4);
             if (callback) {
                 callback(data);
             }
@@ -332,7 +334,7 @@ class Nut extends EventEmitter {
                 callback(null);
             } else {
                 if (data.indexOf('ERR') === 0) {
-                    data = data.substring(4);
+                    data = data.slice(4);
                 }
 
                 callback(data);
@@ -361,22 +363,23 @@ class Nut extends EventEmitter {
         });
     }
 
-    ListClients(ups) {
+    ListClients(ups, callback) {
         this.send('LIST CLIENT ' + ups, data => {
             if (!data) {
                 data = 'ERR Empty response\n';
             }
 
-            const data_array = data.split('\n');
-            if (data_array.length === 1) {
-                data_array.push('');
+            const dataArray = data.split('\n');
+            if (dataArray.length === 1) {
+                dataArray.push('');
             }
 
             const re = /^CLIENT\s+.+\s+(.+)/;
-            for (let i = 0; i < data_array.length - 1; i++) {
-                const line = data_array[i];
+            const clients = [];
+            for (let i = 0; i < dataArray.length - 1; i++) {
+                const line = dataArray[i];
                 if (line.indexOf('BEGIN LIST CLIENT') === 0) {
-                    clients = [];
+                    // ...
                 } else if (line.indexOf('CLIENT ' + ups) === 0) {
                     const matches = re.exec(line);
                     clients.push(matches[1]);
@@ -386,7 +389,7 @@ class Nut extends EventEmitter {
                     break;
                 } else if (line.indexOf('ERR') === 0) {
                     this.status = 'idle';
-                    callback(null, line.substring(4));
+                    callback(null, line.slice(4));
                     break;
                 }
             }
