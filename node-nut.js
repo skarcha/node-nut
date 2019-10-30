@@ -55,6 +55,26 @@ class Nut extends EventEmitter {
         this._client.end();
     }
 
+    _callbackOrPromise(callback, proc) {
+        if (callback) {
+            proc(callback);
+        } else {
+            return new Promise((resolve, reject) => {
+                proc((res, err) => {
+                    if (err) {
+                        if (err instanceof Error) {
+                            reject(err);
+                        } else {
+                            reject(new Error(err));
+                        }
+                    } else {
+                        resolve(res);
+                    }
+                });
+            });
+        }
+    }
+
     _parseKeyValueList(data, listType, re, callback) {
         if (!data) {
             data = 'ERR Empty response\n';
@@ -80,176 +100,194 @@ class Nut extends EventEmitter {
     }
 
     GetUPSList(callback) {
-        this.send('LIST UPS', data => {
-            this._parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.*)"/, (vars, err) => {
-                this.status = 'idle';
-                callback(vars, err);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST UPS', data => {
+                this._parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.*)"/, (vars, err) => {
+                    this.status = 'idle';
+                    callback(vars, err);
+                });
             });
         });
     }
 
     GetUPSVars(ups, callback) {
-        this.send('LIST VAR ' + ups, data => {
-            this._parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
-                this.status = 'idle';
-                callback(vars, err);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST VAR ' + ups, data => {
+                this._parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
+                    this.status = 'idle';
+                    callback(vars, err);
+                });
             });
         });
     }
 
     GetUPSCommands(ups, callback) {
-        this.send('LIST CMD ' + ups, data => {
-            if (!data) {
-                data = 'ERR Empty response\n';
-            }
-
-            const dataArray = data.split('\n');
-
-            const re = /^CMD\s+.+\s+(.+)/;
-            const commands = [];
-            for (const line of dataArray) {
-                if (line.indexOf('BEGIN LIST CMD') === 0) {
-                    // ...
-                } else if (line.indexOf('CMD ' + ups) === 0) {
-                    const matches = re.exec(line);
-                    commands.push(matches[1]);
-                } else if (line.indexOf('END LIST CMD') === 0) {
-                    this.status = 'idle';
-                    callback(commands, null);
-                    break;
-                } else if (line.indexOf('ERR') === 0) {
-                    this.status = 'idle';
-                    callback(null, line.slice(4));
-                    break;
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST CMD ' + ups, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
                 }
-            }
+
+                const dataArray = data.split('\n');
+
+                const re = /^CMD\s+.+\s+(.+)/;
+                const commands = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST CMD') === 0) {
+                        // ...
+                    } else if (line.indexOf('CMD ' + ups) === 0) {
+                        const matches = re.exec(line);
+                        commands.push(matches[1]);
+                    } else if (line.indexOf('END LIST CMD') === 0) {
+                        this.status = 'idle';
+                        callback(commands, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
         });
     }
 
     GetRWVars(ups, callback) {
-        this.send('LIST RW ' + ups, function (data) {
-            this._parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
-                this.status = 'idle';
-                callback(vars, err);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST RW ' + ups, function (data) {
+                this._parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
+                    this.status = 'idle';
+                    callback(vars, err);
+                });
             });
         });
     }
 
     GetEnumsForVar(ups, name, callback) {
-        this.send('LIST ENUM ' + ups + ' ' + name, data => {
-            if (!data) {
-                data = 'ERR Empty response\n';
-            }
-
-            const dataArray = data.split('\n');
-
-            const re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
-            const enums = [];
-            for (const line of dataArray) {
-                if (line.indexOf('BEGIN LIST ENUM') === 0) {
-                    // ...
-                } else if (line.indexOf('ENUM ' + ups + ' ' + name) === 0) {
-                    const matches = re.exec(line);
-                    enums.push(matches[1]);
-                } else if (line.indexOf('END LIST ENUM') === 0) {
-                    this.status = 'idle';
-                    callback(enums, null);
-                    break;
-                } else if (line.indexOf('ERR') === 0) {
-                    this.status = 'idle';
-                    callback(null, line.slice(4));
-                    break;
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST ENUM ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
                 }
-            }
+
+                const dataArray = data.split('\n');
+
+                const re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
+                const enums = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST ENUM') === 0) {
+                        // ...
+                    } else if (line.indexOf('ENUM ' + ups + ' ' + name) === 0) {
+                        const matches = re.exec(line);
+                        enums.push(matches[1]);
+                    } else if (line.indexOf('END LIST ENUM') === 0) {
+                        this.status = 'idle';
+                        callback(enums, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
         });
     }
 
     GetRangesForVar(ups, name, callback) {
-        this.send('LIST RANGE ' + ups + ' ' + name, data => {
-            if (!data) {
-                data = 'ERR Empty response\n';
-            }
-
-            const dataArray = data.split('\n');
-
-            const re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
-            const ranges = [];
-            for (const line of dataArray) {
-                if (line.indexOf('BEGIN LIST RANGE') === 0) {
-                    // ...
-                } else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
-                    const matches = re.exec(line);
-                    ranges.push({
-                        min: matches[1],
-                        max: matches[2]
-                    });
-                } else if (line.indexOf('END LIST RANGE') === 0) {
-                    this.status = 'idle';
-                    callback(ranges, null);
-                    break;
-                } else if (line.indexOf('ERR') === 0) {
-                    this.status = 'idle';
-                    callback(null, line.slice(4));
-                    break;
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST RANGE ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
                 }
-            }
+
+                const dataArray = data.split('\n');
+
+                const re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
+                const ranges = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST RANGE') === 0) {
+                        // ...
+                    } else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
+                        const matches = re.exec(line);
+                        ranges.push({
+                            min: matches[1],
+                            max: matches[2]
+                        });
+                    } else if (line.indexOf('END LIST RANGE') === 0) {
+                        this.status = 'idle';
+                        callback(ranges, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
         });
     }
 
     GetVarType(ups, name, callback) {
-        this.send('GET TYPE ' + ups + ' ' + name, data => {
-            if (!data) {
-                data = 'ERR Empty response';
-            }
+        return this._callbackOrPromise(callback, callback => {
+            this.send('GET TYPE ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response';
+                }
 
-            this.status = 'idle';
-            const re = /^TYPE\s+.+\s+.+\s+(.+)/;
-            const matches = re.exec(data);
-            if (matches && matches[1]) {
-                callback(matches[1], null);
-            } else if (data.indexOf('ERR') === 0) {
-                callback(null, data.slice(4));
-            } else {
-                callback(null, null);
-            }
+                this.status = 'idle';
+                const re = /^TYPE\s+.+\s+.+\s+(.+)/;
+                const matches = re.exec(data);
+                if (matches && matches[1]) {
+                    callback(matches[1], null);
+                } else if (data.indexOf('ERR') === 0) {
+                    callback(null, data.slice(4));
+                } else {
+                    callback(null, null);
+                }
+            });
         });
     }
 
     GetVarDescription(ups, name, callback) {
-        this.send('GET DESC ' + ups + ' ' + name, data => {
-            if (!data) {
-                data = 'ERR Empty response';
-            }
+        return this._callbackOrPromise(callback, callback => {
+            this.send('GET DESC ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response';
+                }
 
-            this.status = 'idle';
-            const re = /^DESC\s+.+\s+.+\s+"(.+)"/;
-            const matches = re.exec(data);
-            if (matches && matches[1]) {
-                callback(matches[1], null);
-            } else if (data.indexOf('ERR') === 0) {
-                callback(null, data.slice(4));
-            } else {
-                callback(null, null);
-            }
+                this.status = 'idle';
+                const re = /^DESC\s+.+\s+.+\s+"(.+)"/;
+                const matches = re.exec(data);
+                if (matches && matches[1]) {
+                    callback(matches[1], null);
+                } else if (data.indexOf('ERR') === 0) {
+                    callback(null, data.slice(4));
+                } else {
+                    callback(null, null);
+                }
+            });
         });
     }
 
     GetCommandDescription(ups, command, callback) {
-        this.send('GET CMDDESC ' + ups + ' ' + command, data => {
-            if (!data) {
-                data = 'ERR Empty response';
-            }
+        return this._callbackOrPromise(callback, callback => {
+            this.send('GET CMDDESC ' + ups + ' ' + command, data => {
+                if (!data) {
+                    data = 'ERR Empty response';
+                }
 
-            this.status = 'idle';
-            const re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
-            const matches = re.exec(data);
-            if (matches && matches[1]) {
-                callback(matches[1], null);
-            } else if (data.indexOf('ERR') === 0) {
-                callback(null, data.slice(4));
-            } else {
-                callback(null, null);
-            }
+                this.status = 'idle';
+                const re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
+                const matches = re.exec(data);
+                if (matches && matches[1]) {
+                    callback(matches[1], null);
+                } else if (data.indexOf('ERR') === 0) {
+                    callback(null, data.slice(4));
+                } else {
+                    callback(null, null);
+                }
+            });
         });
     }
 
@@ -267,37 +305,47 @@ class Nut extends EventEmitter {
     }
 
     NutSetRWVar(ups, name, value, callback) {
-        this.send('SET VAR ' + ups + ' ' + name + ' ' + value, data => {
-            this.status = 'idle';
-            this._parseMinimalResult(data, callback);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('SET VAR ' + ups + ' ' + name + ' ' + value, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
         });
     }
 
     RunUPSCommand(ups, command, callback) {
-        this.send('INSTCMD ' + ups + ' ' + command, data => {
-            this.status = 'idle';
-            this._parseMinimalResult(data, callback);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('INSTCMD ' + ups + ' ' + command, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
         });
     }
 
     SetUsername(username, callback) {
-        this.send('USERNAME ' + username, data => {
-            this.status = 'idle';
-            this._parseMinimalResult(data, callback);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('USERNAME ' + username, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
         });
     }
 
     SetPassword(pwd, callback) {
-        this.send('PASSWORD ' + pwd, data => {
-            this.status = 'idle';
-            this._parseMinimalResult(data, callback);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('PASSWORD ' + pwd, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
         });
     }
 
     Master(ups, callback) {
-        this.send('MASTER ' + ups, data => {
-            this.status = 'idle';
-            this._parseMinimalResult(data, callback);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('MASTER ' + ups, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
         });
     }
 
@@ -321,52 +369,60 @@ class Nut extends EventEmitter {
     }
 
     help(callback) {
-        this.send('HELP', data => {
-            this.status = 'idle';
-            callback(data);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('HELP', data => {
+                this.status = 'idle';
+                callback(data);
+            });
         });
     }
 
     ver(callback) {
-        this.send('VER', data => {
-            this.status = 'idle';
-            callback(data);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('VER', data => {
+                this.status = 'idle';
+                callback(data);
+            });
         });
     }
 
     netVer(callback) {
-        this.send('NETVER', data => {
-            this.status = 'idle';
-            callback(data);
+        return this._callbackOrPromise(callback, callback => {
+            this.send('NETVER', data => {
+                this.status = 'idle';
+                callback(data);
+            });
         });
     }
 
     ListClients(ups, callback) {
-        this.send('LIST CLIENT ' + ups, data => {
-            if (!data) {
-                data = 'ERR Empty response\n';
-            }
-
-            const dataArray = data.split('\n');
-
-            const re = /^CLIENT\s+.+\s+(.+)/;
-            const clients = [];
-            for (const line of dataArray) {
-                if (line.indexOf('BEGIN LIST CLIENT') === 0) {
-                    // ...
-                } else if (line.indexOf('CLIENT ' + ups) === 0) {
-                    const matches = re.exec(line);
-                    clients.push(matches[1]);
-                } else if (line.indexOf('END LIST CLIENT') === 0) {
-                    this.status = 'idle';
-                    callback(clients, null);
-                    break;
-                } else if (line.indexOf('ERR') === 0) {
-                    this.status = 'idle';
-                    callback(null, line.slice(4));
-                    break;
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST CLIENT ' + ups, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
                 }
-            }
+
+                const dataArray = data.split('\n');
+
+                const re = /^CLIENT\s+.+\s+(.+)/;
+                const clients = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST CLIENT') === 0) {
+                        // ...
+                    } else if (line.indexOf('CLIENT ' + ups) === 0) {
+                        const matches = re.exec(line);
+                        clients.push(matches[1]);
+                    } else if (line.indexOf('END LIST CLIENT') === 0) {
+                        this.status = 'idle';
+                        callback(clients, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
         });
     }
 }
