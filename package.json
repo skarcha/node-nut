@@ -28,6 +28,9 @@
     "xo": "^0.25.3"
   },
   "xo": {
-    "space": 4
+    "space": 4,
+    "ignore": [
+      "examples/*"
+    ]
   }
 }
