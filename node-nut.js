@@ -72,8 +72,7 @@ class Nut extends EventEmitter {
         }
 
         const vars = [];
-        for (let i = 0; i < dataArray.length - 1; i++) {
-            const line = dataArray[i];
+        for (const line of dataArray) {
             if (line.indexOf('BEGIN LIST ' + listType) === 0) {
                 // ...
             } else if (line.indexOf(listType + ' ') === 0) {
@@ -120,8 +119,7 @@ class Nut extends EventEmitter {
 
             const re = /^CMD\s+.+\s+(.+)/;
             const commands = [];
-            for (let i = 0; i < dataArray.length - 1; i++) {
-                const line = dataArray[i];
+            for (const line of dataArray) {
                 if (line.indexOf('BEGIN LIST CMD') === 0) {
                     // ...
                 } else if (line.indexOf('CMD ' + ups) === 0) {
@@ -162,8 +160,7 @@ class Nut extends EventEmitter {
 
             const re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
             const enums = [];
-            for (let i = 0; i < dataArray.length - 1; i++) {
-                const line = dataArray[i];
+            for (const line of dataArray) {
                 if (line.indexOf('BEGIN LIST ENUM') === 0) {
                     // ...
                 } else if (line.indexOf('ENUM ' + ups + ' ' + name) === 0) {
@@ -195,8 +192,7 @@ class Nut extends EventEmitter {
 
             const re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
             const ranges = [];
-            for (let i = 0; i < dataArray.length - 1; i++) {
-                const line = dataArray[i];
+            for (const line of dataArray) {
                 if (line.indexOf('BEGIN LIST RANGE') === 0) {
                     // ...
                 } else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
@@ -376,8 +372,7 @@ class Nut extends EventEmitter {
 
             const re = /^CLIENT\s+.+\s+(.+)/;
             const clients = [];
-            for (let i = 0; i < dataArray.length - 1; i++) {
-                const line = dataArray[i];
+            for (const line of dataArray) {
                 if (line.indexOf('BEGIN LIST CLIENT') === 0) {
                     // ...
                 } else if (line.indexOf('CLIENT ' + ups) === 0) {
