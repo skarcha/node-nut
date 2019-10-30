@@ -37,8 +37,11 @@ class Nut extends EventEmitter {
     }
 
     start() {
-        this._client.connect(this._port, this._host, () => {
-            this.emit('ready');
+        return new Promise(resolve => {
+            this._client.connect(this._port, this._host, () => {
+                this.emit('ready');
+                resolve();
+            });
         });
     }
 

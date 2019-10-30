@@ -10,12 +10,10 @@ nut.on('close', () => {
     console.log('Connection closed.');
 });
 
-nut.on('ready', async () => {
+nut.start().then(async () => {
     let upslist = await nut.GetUPSList();
     let upsname = Object.keys(upslist)[0];
 
     let vars = await nut.GetUPSVars(upsname);
     console.log(vars);
 });
-
-nut.start();
