@@ -12,19 +12,9 @@ class Nut extends EventEmitter {
         this.status = 'idle';
         this.dataInBuff = '';
 
-        const open = () => {
+        this._client = net.createConnection(this._port, this._host, () => {
             this.emit('ready');
-        };
-
-        const error = err => {
-            this.emit('error', err);
-        };
-
-        const close = () => {
-            this.emit('close');
-        };
-
-        this._client = net.createConnection(this._port, this._host, open);
+        });
         this._client.setEncoding('ascii');
 
         this._client.on('data', data => {
@@ -42,8 +32,12 @@ class Nut extends EventEmitter {
             }
         });
 
-        this._client.on('error', error);
-        this._client.on('close', close);
+        this._client.on('error', err => {
+            this.emit('error', err);
+        });
+        this._client.on('close', () => {
+            this.emit('close');
+        });
     }
 
     send(cmd, parseFunc) {
