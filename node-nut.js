@@ -61,9 +61,6 @@ class Nut extends EventEmitter {
         }
 
         const dataArray = data.split('\n');
-        if (dataArray.length === 1) {
-            dataArray.push('');
-        }
 
         const vars = [];
         for (const line of dataArray) {
@@ -107,9 +104,6 @@ class Nut extends EventEmitter {
             }
 
             const dataArray = data.split('\n');
-            if (dataArray.length === 1) {
-                dataArray.push('');
-            }
 
             const re = /^CMD\s+.+\s+(.+)/;
             const commands = [];
@@ -148,9 +142,6 @@ class Nut extends EventEmitter {
             }
 
             const dataArray = data.split('\n');
-            if (dataArray.length === 1) {
-                dataArray.push('');
-            }
 
             const re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
             const enums = [];
@@ -180,9 +171,6 @@ class Nut extends EventEmitter {
             }
 
             const dataArray = data.split('\n');
-            if (dataArray.length === 1) {
-                dataArray.push('');
-            }
 
             const re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
             const ranges = [];
@@ -360,9 +348,6 @@ class Nut extends EventEmitter {
             }
 
             const dataArray = data.split('\n');
-            if (dataArray.length === 1) {
-                dataArray.push('');
-            }
 
             const re = /^CLIENT\s+.+\s+(.+)/;
             const clients = [];
