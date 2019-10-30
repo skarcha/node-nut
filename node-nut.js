@@ -82,7 +82,8 @@ class Nut extends EventEmitter {
 
     _parseKeyValueList(data, listType, re, callback) {
         if (!data) {
-            data = 'ERR Empty response\n';
+            callback(null, 'Empty response');
+            return;
         }
 
         const dataArray = data.split('\n');
