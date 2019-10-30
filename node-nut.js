@@ -88,7 +88,7 @@ class Nut extends EventEmitter {
 
         const dataArray = data.split('\n');
 
-        const vars = [];
+        const vars = {};
         for (const line of dataArray) {
             if (line.indexOf('BEGIN LIST ' + listType) === 0) {
                 // ...
