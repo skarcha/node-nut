@@ -6,15 +6,11 @@ class Nut extends EventEmitter {
         super();
         this._port = port;
         this._host = host;
-    }
 
-    start() {
         this.status = 'idle';
         this.dataInBuff = '';
 
-        this._client = net.createConnection(this._port, this._host, () => {
-            this.emit('ready');
-        });
+        this._client = new net.Socket();
         this._client.setEncoding('ascii');
 
         this._client.on('data', data => {
@@ -37,6 +33,12 @@ class Nut extends EventEmitter {
         });
         this._client.on('close', () => {
             this.emit('close');
+        });
+    }
+
+    start() {
+        this._client.connect(this._port, this._host, () => {
+            this.emit('ready');
         });
     }
 
