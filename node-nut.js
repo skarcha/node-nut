@@ -1,390 +1,436 @@
-var net = require('net');
-var inherits = require('util').inherits;
-var EventEmitter = require('events').EventEmitter;
+const net = require('net');
+const EventEmitter = require('events');
+
+class Nut extends EventEmitter {
+    constructor(port, host) {
+        super();
+        this._port = port;
+        this._host = host;
+
+        this.status = 'idle';
+        this.dataInBuff = '';
+
+        this._client = new net.Socket();
+        this._client.setEncoding('ascii');
+
+        this._client.on('data', data => {
+            this.dataInBuff += data;
+
+            if (this.dataInBuff.slice(-1) !== '\n') {
+                return;
+            }
+
+            if (typeof (this.parseFunc) === 'undefined') {
+                this.status = 'idle';
+            } else {
+                this.parseFunc(this.dataInBuff);
+                this.dataInBuff = '';
+            }
+        });
+
+        this._client.on('error', err => {
+            this.emit('error', err);
+        });
+        this._client.on('close', () => {
+            this.emit('close');
+        });
+    }
+
+    start() {
+        return new Promise(resolve => {
+            this._client.connect(this._port, this._host, () => {
+                this.emit('ready');
+                resolve();
+            });
+        });
+    }
+
+    send(cmd, parseFunc) {
+        if (this.status === 'idle') {
+            this.status = 'waiting';
+            this.parseFunc = parseFunc;
+            this._client.write(cmd + '\n');
+        } else if (parseFunc) {
+            parseFunc('ERR Other communication still running\n');
+        }
+    }
+
+    close() {
+        this.send('LOGOUT');
+        this._client.end();
+    }
+
+    _callbackOrPromise(callback, proc) {
+        if (callback) {
+            proc(callback);
+        } else {
+            return new Promise((resolve, reject) => {
+                proc((res, err) => {
+                    if (err) {
+                        if (err instanceof Error) {
+                            reject(err);
+                        } else {
+                            reject(new Error(err));
+                        }
+                    } else {
+                        resolve(res);
+                    }
+                });
+            });
+        }
+    }
+
+    _parseKeyValueList(data, listType, re, callback) {
+        if (!data) {
+            callback(null, 'Empty response');
+            return;
+        }
+
+        const dataArray = data.split('\n');
+
+        const vars = {};
+        for (const line of dataArray) {
+            if (line.indexOf('BEGIN LIST ' + listType) === 0) {
+                // ...
+            } else if (line.indexOf(listType + ' ') === 0) {
+                const matches = re.exec(line);
+                vars[matches[1]] = matches[2];
+            } else if (line.indexOf('END LIST ' + listType) === 0) {
+                callback(vars, null);
+                break;
+            } else if (line.indexOf('ERR') === 0) {
+                callback(null, line.slice(4));
+                break;
+            }
+        }
+    }
+
+    GetUPSList(callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST UPS', data => {
+                this._parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.*)"/, (vars, err) => {
+                    this.status = 'idle';
+                    callback(vars, err);
+                });
+            });
+        });
+    }
+
+    GetUPSVars(ups, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST VAR ' + ups, data => {
+                this._parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
+                    this.status = 'idle';
+                    callback(vars, err);
+                });
+            });
+        });
+    }
+
+    GetUPSCommands(ups, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST CMD ' + ups, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
+                }
+
+                const dataArray = data.split('\n');
+
+                const re = /^CMD\s+.+\s+(.+)/;
+                const commands = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST CMD') === 0) {
+                        // ...
+                    } else if (line.indexOf('CMD ' + ups) === 0) {
+                        const matches = re.exec(line);
+                        commands.push(matches[1]);
+                    } else if (line.indexOf('END LIST CMD') === 0) {
+                        this.status = 'idle';
+                        callback(commands, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
+        });
+    }
+
+    GetRWVars(ups, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST RW ' + ups, function (data) {
+                this._parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
+                    this.status = 'idle';
+                    callback(vars, err);
+                });
+            });
+        });
+    }
+
+    GetEnumsForVar(ups, name, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST ENUM ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
+                }
+
+                const dataArray = data.split('\n');
+
+                const re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
+                const enums = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST ENUM') === 0) {
+                        // ...
+                    } else if (line.indexOf('ENUM ' + ups + ' ' + name) === 0) {
+                        const matches = re.exec(line);
+                        enums.push(matches[1]);
+                    } else if (line.indexOf('END LIST ENUM') === 0) {
+                        this.status = 'idle';
+                        callback(enums, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
+        });
+    }
+
+    GetRangesForVar(ups, name, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST RANGE ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
+                }
+
+                const dataArray = data.split('\n');
+
+                const re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
+                const ranges = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST RANGE') === 0) {
+                        // ...
+                    } else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
+                        const matches = re.exec(line);
+                        ranges.push({
+                            min: matches[1],
+                            max: matches[2]
+                        });
+                    } else if (line.indexOf('END LIST RANGE') === 0) {
+                        this.status = 'idle';
+                        callback(ranges, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
+        });
+    }
+
+    GetVarType(ups, name, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('GET TYPE ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response';
+                }
+
+                this.status = 'idle';
+                const re = /^TYPE\s+.+\s+.+\s+(.+)/;
+                const matches = re.exec(data);
+                if (matches && matches[1]) {
+                    callback(matches[1], null);
+                } else if (data.indexOf('ERR') === 0) {
+                    callback(null, data.slice(4));
+                } else {
+                    callback(null, null);
+                }
+            });
+        });
+    }
+
+    GetVarDescription(ups, name, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('GET DESC ' + ups + ' ' + name, data => {
+                if (!data) {
+                    data = 'ERR Empty response';
+                }
+
+                this.status = 'idle';
+                const re = /^DESC\s+.+\s+.+\s+"(.+)"/;
+                const matches = re.exec(data);
+                if (matches && matches[1]) {
+                    callback(matches[1], null);
+                } else if (data.indexOf('ERR') === 0) {
+                    callback(null, data.slice(4));
+                } else {
+                    callback(null, null);
+                }
+            });
+        });
+    }
+
+    GetCommandDescription(ups, command, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('GET CMDDESC ' + ups + ' ' + command, data => {
+                if (!data) {
+                    data = 'ERR Empty response';
+                }
+
+                this.status = 'idle';
+                const re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
+                const matches = re.exec(data);
+                if (matches && matches[1]) {
+                    callback(matches[1], null);
+                } else if (data.indexOf('ERR') === 0) {
+                    callback(null, data.slice(4));
+                } else {
+                    callback(null, null);
+                }
+            });
+        });
+    }
+
+    _parseMinimalResult(data, callback) {
+        if (data.indexOf('ERR') === 0) {
+            data = data.slice(4);
+            if (callback) {
+                callback(data);
+            }
+        }
+
+        if (callback) {
+            callback(null);
+        }
+    }
+
+    NutSetRWVar(ups, name, value, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('SET VAR ' + ups + ' ' + name + ' ' + value, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
+        });
+    }
+
+    RunUPSCommand(ups, command, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('INSTCMD ' + ups + ' ' + command, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
+        });
+    }
+
+    SetUsername(username, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('USERNAME ' + username, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
+        });
+    }
+
+    SetPassword(pwd, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('PASSWORD ' + pwd, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
+        });
+    }
+
+    Master(ups, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('MASTER ' + ups, data => {
+                this.status = 'idle';
+                this._parseMinimalResult(data, callback);
+            });
+        });
+    }
+
+    FSD(ups, callback) {
+        this.send('FSD ' + ups, data => {
+            if (!data) {
+                data = 'ERR Empty response';
+            }
+
+            this.status = 'idle';
+            if (data.indexOf('OK FSD-SET') === 0) {
+                callback(null);
+            } else {
+                if (data.indexOf('ERR') === 0) {
+                    data = data.slice(4);
+                }
+
+                callback(data);
+            }
+        });
+    }
+
+    help(callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('HELP', data => {
+                this.status = 'idle';
+                callback(data);
+            });
+        });
+    }
+
+    ver(callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('VER', data => {
+                this.status = 'idle';
+                callback(data);
+            });
+        });
+    }
+
+    netVer(callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('NETVER', data => {
+                this.status = 'idle';
+                callback(data);
+            });
+        });
+    }
+
+    ListClients(ups, callback) {
+        return this._callbackOrPromise(callback, callback => {
+            this.send('LIST CLIENT ' + ups, data => {
+                if (!data) {
+                    data = 'ERR Empty response\n';
+                }
+
+                const dataArray = data.split('\n');
+
+                const re = /^CLIENT\s+.+\s+(.+)/;
+                const clients = [];
+                for (const line of dataArray) {
+                    if (line.indexOf('BEGIN LIST CLIENT') === 0) {
+                        // ...
+                    } else if (line.indexOf('CLIENT ' + ups) === 0) {
+                        const matches = re.exec(line);
+                        clients.push(matches[1]);
+                    } else if (line.indexOf('END LIST CLIENT') === 0) {
+                        this.status = 'idle';
+                        callback(clients, null);
+                        break;
+                    } else if (line.indexOf('ERR') === 0) {
+                        this.status = 'idle';
+                        callback(null, line.slice(4));
+                        break;
+                    }
+                }
+            });
+        });
+    }
+}
 
 module.exports = Nut;
-
-function Nut (port, host)
-{
-	EventEmitter.call(this);
-	Nut.init.call(this, port, host);
-}
-
-inherits(Nut, EventEmitter);
-
-Nut.init = function (port, host) {
-	this._port = port;
-	this._host = host;
-};
-
-Nut.prototype.start = function () {
-	var self = this;
-	self.status = 'idle';
-	self.dataInBuff = '';
-
-	function open () { self.emit('ready'); }
-	function error (err) { self.emit('error', err); }
-	function close () { self.emit('close'); }
-
-	this._client = net.createConnection (self._port, self._host, open);
-	this._client.setEncoding('ascii');
-
-	this._client.on('data', function (data) {
-		self.dataInBuff += data;
-
-		if (self.dataInBuff.slice(-1) !== '\n') {
-			return;
-		}
-
-		if (typeof(self.parseFunc) !== 'undefined') {
-			self.parseFunc(self.dataInBuff);
-			self.dataInBuff = '';
-		}
-		else {
-			self.status = 'idle';
-		}
-	});
-
-	this._client.on('error', error);
-	this._client.on('close', close);
-};
-
-Nut.prototype.send = function (cmd, parseFunc) {
-	if (this.status == 'idle') {
-		this.status = 'waiting';
-		this.parseFunc = parseFunc;
-		this._client.write(cmd + '\n');
-	}
-	else if (parseFunc) {
-		parseFunc('ERR Other communication still running\n');
-	}
-};
-
-Nut.prototype.close = function () {
-	this.send('LOGOUT');
-	this._client.end();
-};
-
-var vars = [];
-function parseKeyValueList(data, list_type, re, callback) {
-	if (!data) data = 'ERR Empty response\n';
-	var data_array = data.split('\n');
-	if (data_array.length === 1) data_array.push('');
-	for (i = 0; i < data_array.length-1; i++) {
-		line = data_array[i];
-		if (line.indexOf('BEGIN LIST ' + list_type) === 0) {
-			vars = [];
-		}
-		else if (line.indexOf(list_type + ' ') === 0) {
-			matches = re.exec(line);
-			vars[matches[1]] = matches[2];
-		}
-		else if (line.indexOf('END LIST ' + list_type) === 0) {
-			callback(vars, null);
-			break;
-		}
-		else if (line.indexOf('ERR') === 0) {
-			callback(null, line.substring(4));
-			break;
-		}
-	}
-}
-
-Nut.prototype.GetUPSList = function (callback) {
-	self = this;
-	this.send('LIST UPS', function(data) {
-		parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.*)"/, function(vars, err) {
-			self.status = 'idle';
-			callback(vars, err);
-		});
-	});
-};
-
-Nut.prototype.GetUPSVars = function (ups, callback) {
-	self = this;
-	this.send('LIST VAR ' + ups, function(data) {
-		parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.*)"/, function(vars, err) {
-			self.status = 'idle';
-			callback(vars, err);
-		});
-	});
-};
-
-Nut.prototype.GetUPSCommands = function (ups, callback) {
-	self = this;
-	this.send('LIST CMD ' + ups, function(data) {
-		if (!data) data = 'ERR Empty response\n';
-		var data_array = data.split('\n');
-		if (data_array.length === 1) data_array.push('');
-		var re = /^CMD\s+.+\s+(.+)/;
-		for (i = 0; i < data_array.length-1; i++) {
-			line = data_array[i];
-			if (line.indexOf('BEGIN LIST CMD') === 0) {
-				commands = [];
-			}
-			else if (line.indexOf('CMD ' + ups) === 0) {
-				matches = re.exec(line);
-				commands.push(matches[1]);
-			}
-			else if (line.indexOf('END LIST CMD') === 0) {
-				self.status = 'idle';
-				callback(commands, null);
-				break;
-			}
-			else if (line.indexOf('ERR') === 0) {
-				self.status = 'idle';
-				callback(null, line.substring(4));
-				break;
-			}
-		}
-	});
-};
-
-Nut.prototype.GetRWVars = function (ups, callback) {
-	self = this;
-	this.send('LIST RW ' + ups, function(data) {
-		parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.*)"/, function(vars, err) {
-			self.status = 'idle';
-			callback(vars, err);
-		});
-	});
-};
-
-Nut.prototype.GetEnumsForVar = function (ups, name, callback) {
-	self = this;
-	this.send('LIST ENUM ' + ups + ' ' + name, function(data) {
-		if (!data) data = 'ERR Empty response\n';
-		var data_array = data.split('\n');
-		if (data_array.length === 1) data_array.push('');
-		var re = /^ENUM\s+.+\s+.+\s+"(.*)"/;
-		for (i = 0; i < data_array.length-1; i++) {
-			line = data_array[i];
-			if (line.indexOf('BEGIN LIST ENUM') === 0) {
-				enums = [];
-			}
-			else if (line.indexOf('ENUM ' + ups + ' ' + name) === 0) {
-				matches = re.exec(line);
-				enums.push(matches[1]);
-			}
-			else if (line.indexOf('END LIST ENUM') === 0) {
-				self.status = 'idle';
-				callback(enums, null);
-				break;
-			}
-			else if (line.indexOf('ERR') === 0) {
-				self.status = 'idle';
-				callback(null, line.substring(4));
-				break;
-			}
-		}
-	});
-};
-
-Nut.prototype.GetRangesForVar = function (ups, name, callback) {
-	self = this;
-	this.send('LIST RANGE ' + ups + ' ' + name, function(data) {
-		if (!data) data = 'ERR Empty response\n';
-		var data_array = data.split('\n');
-		if (data_array.length === 1) data_array.push('');
-		var re = /^RANGE\s+.+\s+.+\s+"(.+)"\s+"(.+)"/;
-		for (i = 0; i < data_array.length-1; i++) {
-			line = data_array[i];
-			if (line.indexOf('BEGIN LIST RANGE') === 0) {
-				ranges = [];
-			}
-			else if (line.indexOf('RANGE ' + ups + ' ' + name) === 0) {
-				matches = re.exec(line);
-				ranges.push({
-					'min': matches[1],
-					'max': matches[2]
-				});
-			}
-			else if (line.indexOf('END LIST RANGE') === 0) {
-				self.status = 'idle';
-				callback(ranges, null);
-				break;
-			}
-			else if (line.indexOf('ERR') === 0) {
-				self.status = 'idle';
-				callback(null, line.substring(4));
-				break;
-			}
-		}
-	});
-};
-
-Nut.prototype.GetVarType = function (ups, name, callback) {
-	self = this;
-	this.send('GET TYPE ' + ups + ' ' + name, function(data) {
-		if (!data) data = 'ERR Empty response';
-		self.status = 'idle';
-		var re = /^TYPE\s+.+\s+.+\s+(.+)/;
-		matches = re.exec(data);
-		if (matches && matches[1]) {
-			callback(matches[1], null);
-		}
-		else if (data.indexOf('ERR') === 0) {
-			callback(null, data.substring(4));
-		}
-		else {
-			callback(null, null);
-		}
-	});
-};
-
-Nut.prototype.GetVarDescription = function (ups, name, callback) {
-	self = this;
-	this.send('GET DESC ' + ups + ' ' + name, function(data) {
-		if (!data) data = 'ERR Empty response';
-		self.status = 'idle';
-		var re = /^DESC\s+.+\s+.+\s+"(.+)"/;
-		matches = re.exec(data);
-		if (matches && matches[1]) {
-			callback(matches[1], null);
-		}
-		else if (data.indexOf('ERR') === 0) {
-			callback(null, data.substring(4));
-		}
-		else {
-			callback(null, null);
-		}
-	});
-};
-
-Nut.prototype.GetCommandDescription = function (ups, command, callback) {
-	self = this;
-	this.send('GET CMDDESC ' + ups + ' ' + command, function(data) {
-		if (!data) data = 'ERR Empty response';
-		self.status = 'idle';
-		var re = /^CMDDESC\s+.+\s+.+\s+"(.+)"/;
-		matches = re.exec(data);
-		if (matches && matches[1]) {
-			callback(matches[1], null);
-		}
-		else if (data.indexOf('ERR') === 0) {
-			callback(null, data.substring(4));
-		}
-		else {
-			callback(null, null);
-		}
-	});
-};
-
-function parseMinimalResult(data, callback) {
-	if (data.indexOf('ERR') === 0) {
-		data = data.substring(4);
-		if (callback) callback(data);
-	}
-	if (callback) callback(null);
-}
-
-Nut.prototype.SetRWVar = function (ups, name, value, callback) {
-	self = this;
-	this.send('SET VAR ' + ups + ' ' + name + ' ' + value, function(data) {
-		self.status = 'idle';
-		parseMinimalResult(data, callback);
-	});
-};
-
-Nut.prototype.RunUPSCommand = function (ups, command, callback) {
-	self = this;
-	this.send('INSTCMD ' + ups + ' ' + command, function(data) {
-		self.status = 'idle';
-		parseMinimalResult(data, callback);
-	});
-};
-
-Nut.prototype.SetUsername = function (username, callback) {
-	self = this;
-	this.send('USERNAME ' + username, function(data) {
-		self.status = 'idle';
-		parseMinimalResult(data, callback);
-	});
-};
-
-Nut.prototype.SetPassword = function (pwd, callback) {
-	self = this;
-	this.send('PASSWORD ' + pwd, function(data) {
-		self.status = 'idle';
-		parseMinimalResult(data, callback);
-	});
-};
-
-Nut.prototype.Master = function (ups, callback) {
-	self = this;
-	this.send('MASTER ' + ups, function(data) {
-		self.status = 'idle';
-		parseMinimalResult(data, callback);
-	});
-};
-
-Nut.prototype.FSD = function (ups, callback) {
-	self = this;
-	this.send('FSD ' + ups, function(data) {
-		if (!data) data = 'ERR Empty response';
-		self.status = 'idle';
-		if (data.indexOf('OK FSD-SET') === 0) {
-			callback(null);
-		}
-		else {
-			if (data.indexOf('ERR') === 0) {
-				data = data.substring(4);
-			}
-			callback(data);
-		}
-	});
-};
-
-Nut.prototype.help = function (callback) {
-	self = this;
-	this.send('HELP', function(data) {
-		self.status = 'idle';
-		callback(data);
-	});
-};
-
-Nut.prototype.ver = function (callback) {
-	self = this;
-	this.send('VER', function(data) {
-		self.status = 'idle';
-		callback(data);
-	});
-};
-
-Nut.prototype.netVer = function (callback) {
-	self = this;
-	this.send('NETVER', function(data) {
-		self.status = 'idle';
-		callback(data);
-	});
-};
-
-Nut.prototype.ListClients = function (ups) {
-	self = this;
-	this.send('LIST CLIENT ' + ups, function(data) {
-		if (!data) data = 'ERR Empty response\n';
-		var data_array = data.split('\n');
-		if (data_array.length === 1) data_array.push('');
-		var re = /^CLIENT\s+.+\s+(.+)/;
-		for (i = 0; i < data_array.length-1; i++) {
-			line = data_array[i];
-			if (line.indexOf('BEGIN LIST CLIENT') === 0) {
-				clients = [];
-			}
-			else if (line.indexOf('CLIENT ' + ups) === 0) {
-				matches = re.exec(line);
-				clients.push(matches[1]);
-			}
-			else if (line.indexOf('END LIST CLIENT') === 0) {
-				self.status = 'idle';
-				callback(clients, null);
-				break;
-			}
-			else if (line.indexOf('ERR') === 0) {
-				self.status = 'idle';
-				callback(null, line.substring(4));
-				break;
-			}
-		}
-	});
-};
