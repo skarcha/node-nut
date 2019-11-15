@@ -31,7 +31,7 @@ class Nut extends EventEmitter {
         this._connected = false;
         this._client.on('connect', () => {
             this._connected = true;
-            this.emit('connected');
+            this.emit('connect');
         });
         this._client.on('error', err => {
             this._connected = false;
@@ -39,7 +39,7 @@ class Nut extends EventEmitter {
         });
         this._client.on('close', hadError => {
             this._connected = false;
-            this.emit('disconnected', hadError);
+            this.emit('disconnect', hadError);
         });
     }
 
@@ -116,11 +116,11 @@ class Nut extends EventEmitter {
     }
 
     getUpsList(callback) {
-        return this._callbackOrPromise(callback, callback => {
+        return this._callbackOrPromise(callback, proc => {
             this.send('LIST UPS', data => {
                 this._parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.*)"/, (vars, err) => {
                     this.status = 'idle';
-                    callback(vars, err);
+                    proc(vars, err);
                 });
             });
         });

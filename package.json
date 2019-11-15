@@ -5,19 +5,16 @@
   "contributors": [
     "Simon Christmann <simon@christmann.email>"
   ],
-  "main": "node-nut.js",
-  "files": [
-    "node-nut.js"
-  ],
+  "main": "index.js",
+  "scripts": {
+    "test": "xo",
+    "docs": "cat docs/README.header.md > README.md ; jsdoc2md --param-list-format list --heading-depth 3 -f index.js >> README.md ; cat docs/README.footer.md >> README.md"
+  },
   "version": "1.0.3",
   "homepage": "https://github.com/skarcha/node-nut",
   "repository": {
     "type": "git",
     "url": "https://github.com/skarcha/node-nut.git"
-  },
-  "engines": {
-    "node": ">0.8.x",
-    "npm": ">1.1.x"
   },
   "keywords": [
     "nut",
@@ -25,6 +22,7 @@
     "power"
   ],
   "devDependencies": {
+    "jsdoc-to-markdown": "^5.0.2",
     "xo": "^0.25.3"
   },
   "xo": {
