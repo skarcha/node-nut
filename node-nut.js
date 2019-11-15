@@ -28,18 +28,28 @@ class Nut extends EventEmitter {
             }
         });
 
+        this._connected = false;
+        this._client.on('connect', () => {
+            this._connected = true;
+            this.emit('connected');
+        });
         this._client.on('error', err => {
+            this._connected = false;
             this.emit('error', err);
         });
-        this._client.on('close', () => {
-            this.emit('close');
+        this._client.on('close', hadError => {
+            this._connected = false;
+            this.emit('disconnected', hadError);
         });
     }
 
-    start() {
+    get connected() {
+        return this._connected;
+    }
+
+    connect() {
         return new Promise(resolve => {
             this._client.connect(this._port, this._host, () => {
-                this.emit('ready');
                 resolve();
             });
         });
@@ -55,7 +65,7 @@ class Nut extends EventEmitter {
         }
     }
 
-    close() {
+    disconnect() {
         this.send('LOGOUT');
         this._client.end();
     }
@@ -105,7 +115,7 @@ class Nut extends EventEmitter {
         }
     }
 
-    GetUPSList(callback) {
+    getUpsList(callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST UPS', data => {
                 this._parseKeyValueList(data, 'UPS', /^UPS\s+(.+)\s+"(.*)"/, (vars, err) => {
@@ -116,7 +126,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetUPSVars(ups, callback) {
+    getUpsVars(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST VAR ' + ups, data => {
                 this._parseKeyValueList(data, 'VAR', /^VAR\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
@@ -127,7 +137,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetUPSCommands(ups, callback) {
+    getUpsCommands(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST CMD ' + ups, data => {
                 if (!data) {
@@ -158,7 +168,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetRWVars(ups, callback) {
+    getRwVars(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST RW ' + ups, function (data) {
                 this._parseKeyValueList(data, 'RW', /^RW\s+.+\s+(.+)\s+"(.*)"/, (vars, err) => {
@@ -169,7 +179,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetEnumsForVar(ups, name, callback) {
+    getEnumsForVar(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST ENUM ' + ups + ' ' + name, data => {
                 if (!data) {
@@ -200,7 +210,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetRangesForVar(ups, name, callback) {
+    getRangesForVar(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST RANGE ' + ups + ' ' + name, data => {
                 if (!data) {
@@ -234,7 +244,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetVarType(ups, name, callback) {
+    getVarType(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('GET TYPE ' + ups + ' ' + name, data => {
                 if (!data) {
@@ -255,7 +265,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetVarDescription(ups, name, callback) {
+    getVarDescription(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('GET DESC ' + ups + ' ' + name, data => {
                 if (!data) {
@@ -276,7 +286,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    GetCommandDescription(ups, command, callback) {
+    getCommandDescription(ups, command, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('GET CMDDESC ' + ups + ' ' + command, data => {
                 if (!data) {
@@ -310,7 +320,7 @@ class Nut extends EventEmitter {
         }
     }
 
-    NutSetRWVar(ups, name, value, callback) {
+    nutSetRWVar(ups, name, value, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('SET VAR ' + ups + ' ' + name + ' ' + value, data => {
                 this.status = 'idle';
@@ -319,7 +329,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    RunUPSCommand(ups, command, callback) {
+    runUpsCommand(ups, command, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('INSTCMD ' + ups + ' ' + command, data => {
                 this.status = 'idle';
@@ -328,7 +338,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    SetUsername(username, callback) {
+    setUsername(username, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('USERNAME ' + username, data => {
                 this.status = 'idle';
@@ -337,7 +347,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    SetPassword(pwd, callback) {
+    setPassword(pwd, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('PASSWORD ' + pwd, data => {
                 this.status = 'idle';
@@ -346,7 +356,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    Master(ups, callback) {
+    master(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('MASTER ' + ups, data => {
                 this.status = 'idle';
@@ -355,7 +365,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    FSD(ups, callback) {
+    fsd(ups, callback) {
         this.send('FSD ' + ups, data => {
             if (!data) {
                 data = 'ERR Empty response';
@@ -401,7 +411,7 @@ class Nut extends EventEmitter {
         });
     }
 
-    ListClients(ups, callback) {
+    listClients(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST CLIENT ' + ups, data => {
                 if (!data) {
