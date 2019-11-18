@@ -8,7 +8,7 @@
   "main": "index.js",
   "scripts": {
     "test": "xo",
-    "docs": "cat docs/README.header.md > README.md ; jsdoc2md --param-list-format list --heading-depth 3 -f index.js >> README.md ; cat docs/README.footer.md >> README.md"
+    "docs": "cat docs/README.header.md > README.md ; jsdoc2md --heading-depth 3 -f index.js >> README.md ; cat docs/README.footer.md >> README.md"
   },
   "version": "1.0.3",
   "homepage": "https://github.com/skarcha/node-nut",

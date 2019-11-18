@@ -3,157 +3,278 @@
 Node-NUT is a NodeJS module that implements a NUT (Network UPS Tools) client.
 
 ## Version compatibility information
-v1.0.0 introduce callbacks into all functions including a second "error" parameter. This error parameter is null on success or a text on error. Please see the updated method documentation below.
 
-This change should not break existing code because you can simply ignore the second parameter, but there is one change coming with it:
+v2 introduces new method names and Promises for certain functions. Please refer to the API below.
 
-When with v0.0.x an error occured in one of the "Get-List-Of" methods then the callback was pot. never called at all. This has changed now because now the callback is also called in errorcases, but then with an empty object/list in return. So you may want to include error handling code that not strange things happens in error cases.
+## API
+<a name="Nut"></a>
 
-## Events
+### Nut
+**Kind**: global class  
 
-### ready
+* [Nut](#Nut)
+    * [new Nut([port], [host])](#new_Nut_new)
+    * [.connected](#Nut+connected) : <code>boolean</code>
+    * [.connect()](#Nut+connect) ⇒ <code>Promise</code>
+    * [.disconnect()](#Nut+disconnect)
+    * [.getUpsList([callback])](#Nut+getUpsList) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getUpsVars(ups, [callback])](#Nut+getUpsVars) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getUpsCommands(ups, [callback])](#Nut+getUpsCommands) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getRwVars(ups, [callback])](#Nut+getRwVars) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getEnumsForVar(ups, name, [callback])](#Nut+getEnumsForVar) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getRangesForVar(ups, name, [callback])](#Nut+getRangesForVar) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getVarType(ups, name, [callback])](#Nut+getVarType) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getVarDescription(ups, name, [callback])](#Nut+getVarDescription) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.getCommandDescription(ups, command, [callback])](#Nut+getCommandDescription) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.nutSetRwVar(ups, name, value, [callback])](#Nut+nutSetRwVar) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.runUpsCommand(ups, command, [callback])](#Nut+runUpsCommand) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.setUsername(username, [callback])](#Nut+setUsername) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.setPassword(password, [callback])](#Nut+setPassword) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.master(ups, [callback])](#Nut+master) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.fsd(ups, [callback])](#Nut+fsd) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.help([callback])](#Nut+help) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.ver([callback])](#Nut+ver) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.netVer([callback])](#Nut+netVer) ⇒ <code>Promise.&lt;object&gt;</code>
+    * [.listClients(ups, [callback])](#Nut+listClients) ⇒ <code>Promise.&lt;object&gt;</code>
 
-This event is emitted when the connection to the NUT server is established.
+<a name="new_Nut_new"></a>
 
-### error
-
-Emitted when there was an error establishing the connection or with the network communication to
-the server.
-
-### close
-
-Emitted when the connection to the NUT server is closed.
-
-## Functions (tested)
-
-### `start()`
-
-Starts the connection to the server.
-
-### `GetUPSList (callback)`
-
-Calls the `callback` function with the list of UPS as an object as the first parameter. If the second parameter is not null then an error happened and the first object is returned as null.
-Keys in the object are the UPS names and the values are the provided description for this UPS.
-
-### `GetUPSVars (upsname, callback)`
-
-Calls the `callback` function with the list of VARs of `upsname` as an object as the first parameter.  If the second parameter is not null then an error happened and the first object is returned as null.
-Keys in the object are the VAR names and the values are the current VAR values.
-
-### `GetUPSCommands (upsname, callback)`
-
-Calls the `callback` function with the list of COMMANDs available in `upsname` as an array as the first parameter. If the second parameter is not null then an error happened and the first object is returned as null.
-The values in the array are the available COMMANDs.
-
-### `GetCommandDescription (upsname, cmdname, callback)`
-
-Calls the `callback` function with the description for the given `cmdname` as a string as the first parameter. If the second parameter is not null then an error happened and the first object is returned as null.
-The description is returned as string.
-
-### `RunUPSCommand (upsname, command, callback)`
-
-Rund the COMMAND given by `command`. The callback is called with one parameter `err` which is null on success or contains an error string on error and can be used to check the result of the call.
-
-***Note: Some commands need to set Username and Password before, else it returns an Error! Please consult the documentation of your UPS system.***
-
-### `SetUsername (username, callback)`
-
-Set the password for the connection. The callback is called with one parameter `err` which is null on success or contains an error string on error and can be used to check the result of the call.
-
-***Note: Incorrect values may not generate an error when setting the username, but when executing the command later on!***
-
-### `SetPassword (password, callback)`
-
-Set the password for the connection. The callback is called with one parameter `err` which is null on success or contains an error string on error and can be used to check the result of the call.
-
-***Note: Incorrect values may not generate an error when setting the password, but when executing the command later on!***
-
-### `GetRWVars (upsname, callback)`
-
-Calls the `callback` function with the list of RW-VARs of `upsname` as an object as the first parameter.  If the second parameter is not null then an error happened and the first object is returned as null.
-Keys in the object are the RW-VAR names and the values are the current RW-VAR values.
-
-### `SetRWVar (upsname, varname, value, callback)`
-
-Set the value of the RW-VAR given by `varname`. The callback is called with one parameter `err` which is null on success or contains an error string on error and can be used to check the result of the call.
-
-### `GetVarType (upsname, varname, callback)`
-
-Calls the `callback` function with the type for the given `varname` as a string as the first parameter. If the second parameter is not null then an error happened and the first object is returned as null.
-
-The following types are defined, and multiple words may be returned:
-* RW: this variable may be set to another value with SET
-* ENUM: an enumerated type, which supports a few specific values
-* STRING:n: this is a string of maximum length n
-* RANGE: this is an numeric, either integer or float, comprised in the range (see LIST RANGE)
-* NUMBER: this is a simple numeric value, either integer or float :
-
-For more details see http://networkupstools.org/docs/developer-guide.chunked/ar01s09.html#_type
-
-### `GetVarDescription (upsname, varname, callback)`
-
-Calls the `callback` function with the description for the given `varname` as a string as the first parameter. If the second parameter is not null then an error happened and the first object is returned as null.
-The description is returned as string.
-
-### `GetEnumsForVar (upsname, varname, callback)`
-
-Calls the `callback` function with the list of allowed ENUM values for the given `varname` as an array as the first parameter. If the second parameter is not null then an error happened and the first object is returned as null.
-The values in the array are the available ENUMs.
-
-### `GetRangesForVar (upsname, varname, callback)`
-
-Calls the `callback` function with the list of allowed RANGEs for the values for the given `varname` as an array as the first parameter. If the second parameter is not null then an error happened and the first object is returned as null.
-The values in the array are objects with the keys `min` and `max` for the various ranges.
-
-### `Master (upsname, callback)`
-
-Send the MASTER command to the given `upsname`. The callback is called with one parameter `err` which is null on success or contains an error string on error and can be used to check the result of the call.
-
-### `FSD (upsname, callback)`
-
-Send the FSD command to the given `upsname`. The callback is called with one parameter `err` which is null on success or contains an error string on error and can be used to check the result of the call.
-
-### `ListClients (upsname)`
-
-### `help(callback)`
-
-Call the `callback` function with the result of the command `help` as a string.
-
-### `ver (callback)`
-
-Call the `callback` function with the version of the server as a string.
-
-### `netVer (callback)`
-
-Call the `callback` function with the version of the network protocol as a string.
+#### new Nut([port], [host])
+Create an instance of Nut to use with the provided upsd instance at host:port
 
 
-## Example
+| Param | Type |
+| --- | --- |
+| [port] | <code>number</code> | 
+| [host] | <code>string</code> | 
 
-```javascript
-var Nut = require('node-nut');
+<a name="Nut+connected"></a>
 
-oNut = new Nut(3493, 'localhost');
+#### nut.connected : <code>boolean</code>
+Gets current connection state
 
-oNut.on('error', function(err) {
-	console.log('There was an error: ' + err);
-});
+**Kind**: instance property of [<code>Nut</code>](#Nut)  
+<a name="Nut+connect"></a>
 
-oNut.on('close', function() {
-	console.log('Connection closed.');
-});
+#### nut.connect() ⇒ <code>Promise</code>
+Connect to upsd instance.
 
-oNut.on('ready', function() {
-	self = this;
-	this.GetUPSList(function(upslist, err) {
-        if (err) console.log('Error: ' + err)
-        console.log(upslist);
-		self.close();
-	});
-});
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+**Returns**: <code>Promise</code> - Connection established.  
+<a name="Nut+disconnect"></a>
 
-oNut.start();
-```
+#### nut.disconnect()
+Use to disconnect manually inbetween polling cycles when polling with very low frequencies. For e.g. `upslog` disconnects [if the polling cycle is >30s](https://github.com/networkupstools/nut/blob/d56ac7712fa6c3920460a08c649ad03d2c2e82e7/clients/upslog.c#L526).
+
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+<a name="Nut+getUpsList"></a>
+
+#### nut.getUpsList([callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+**Returns**: <code>Promise.&lt;object&gt;</code> - Object containing key-value pairs of upsId -> description.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getUpsVars"></a>
+
+#### nut.getUpsVars(ups, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+Get variables for a certain UPS.
+
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+**Returns**: <code>Promise.&lt;object&gt;</code> - Object containing key-value list of availabla variables. For e.g. `battery.charge`.  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getUpsCommands"></a>
+
+#### nut.getUpsCommands(ups, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getRwVars"></a>
+
+#### nut.getRwVars(ups, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getEnumsForVar"></a>
+
+#### nut.getEnumsForVar(ups, name, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| name | <code>string</code> | Variable name |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getRangesForVar"></a>
+
+#### nut.getRangesForVar(ups, name, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| name | <code>string</code> | Variable name |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getVarType"></a>
+
+#### nut.getVarType(ups, name, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| name | <code>string</code> | Variable name |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getVarDescription"></a>
+
+#### nut.getVarDescription(ups, name, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| name | <code>string</code> | Variable name |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+getCommandDescription"></a>
+
+#### nut.getCommandDescription(ups, command, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| command | <code>string</code> | Command name |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+nutSetRwVar"></a>
+
+#### nut.nutSetRwVar(ups, name, value, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| name | <code>string</code> | Variable name |
+| value | <code>string</code> | Value to set |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+runUpsCommand"></a>
+
+#### nut.runUpsCommand(ups, command, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| command | <code>string</code> | Command name |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+setUsername"></a>
+
+#### nut.setUsername(username, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| username | <code>string</code> | Login with provided username |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+setPassword"></a>
+
+#### nut.setPassword(password, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| password | <code>string</code> | Login with provided password |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+master"></a>
+
+#### nut.master(ups, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+Gain master privileges for this connection. You have to login with a username/password combination first.
+
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+fsd"></a>
+
+#### nut.fsd(ups, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+Execute FSD (you must be master to do this)
+
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+help"></a>
+
+#### nut.help([callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+Send `HELP` command.
+
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+ver"></a>
+
+#### nut.ver([callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+Send `VER` command.
+
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+netVer"></a>
+
+#### nut.netVer([callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+Send `NETVER` command.
+
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
+<a name="Nut+listClients"></a>
+
+#### nut.listClients(ups, [callback]) ⇒ <code>Promise.&lt;object&gt;</code>
+**Kind**: instance method of [<code>Nut</code>](#Nut)  
+
+| Param | Type | Description |
+| --- | --- | --- |
+| ups | <code>string</code> | UPS identifier |
+| [callback] | <code>function</code> | Provide either a callback function or use the returned promise |
+
 
 ## Links
 

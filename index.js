@@ -2,6 +2,11 @@ const net = require('net');
 const EventEmitter = require('events');
 
 class Nut extends EventEmitter {
+    /**
+     * Create an instance of Nut to use with the provided upsd instance at host:port
+     * @param {number} [port]
+     * @param {string} [host]
+     */
     constructor(port, host) {
         super();
         this._port = port;
@@ -43,10 +48,18 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * Gets current connection state
+     * @type {boolean}
+     */
     get connected() {
         return this._connected;
     }
 
+    /**
+     * Connect to upsd instance.
+     * @return {Promise} Connection established.
+     */
     connect() {
         return new Promise(resolve => {
             this._client.connect(this._port, this._host, () => {
@@ -65,6 +78,9 @@ class Nut extends EventEmitter {
         }
     }
 
+    /**
+     * Use to disconnect manually inbetween polling cycles when polling with very low frequencies. For e.g. `upslog` disconnects [if the polling cycle is >30s](https://github.com/networkupstools/nut/blob/d56ac7712fa6c3920460a08c649ad03d2c2e82e7/clients/upslog.c#L526).
+     */
     disconnect() {
         this.send('LOGOUT');
         this._client.end();
@@ -115,6 +131,10 @@ class Nut extends EventEmitter {
         }
     }
 
+    /**
+     * @param  {Function} [callback] Provide either a callback function or use the returned promise
+     * @return {Promise<object>} Object containing key-value pairs of upsId -> description.
+     */
     getUpsList(callback) {
         return this._callbackOrPromise(callback, proc => {
             this.send('LIST UPS', data => {
@@ -126,6 +146,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * Get variables for a certain UPS.
+     * @param  {string} ups - UPS identifier
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>} Object containing key-value list of availabla variables. For e.g. `battery.charge`.
+     */
     getUpsVars(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST VAR ' + ups, data => {
@@ -137,6 +163,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     getUpsCommands(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST CMD ' + ups, data => {
@@ -168,6 +200,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     getRwVars(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST RW ' + ups, function (data) {
@@ -179,6 +217,13 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {string} name - Variable name
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     getEnumsForVar(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST ENUM ' + ups + ' ' + name, data => {
@@ -210,6 +255,13 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {string} name - Variable name
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     getRangesForVar(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST RANGE ' + ups + ' ' + name, data => {
@@ -244,6 +296,13 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {string} name - Variable name
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     getVarType(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('GET TYPE ' + ups + ' ' + name, data => {
@@ -265,6 +324,13 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {string} name - Variable name
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     getVarDescription(ups, name, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('GET DESC ' + ups + ' ' + name, data => {
@@ -286,6 +352,13 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {string} command - Command name
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     getCommandDescription(ups, command, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('GET CMDDESC ' + ups + ' ' + command, data => {
@@ -320,7 +393,15 @@ class Nut extends EventEmitter {
         }
     }
 
-    nutSetRWVar(ups, name, value, callback) {
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {string} name - Variable name
+     * @param  {string} value - Value to set
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
+    nutSetRwVar(ups, name, value, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('SET VAR ' + ups + ' ' + name + ' ' + value, data => {
                 this.status = 'idle';
@@ -329,6 +410,13 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {string} command - Command name
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     runUpsCommand(ups, command, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('INSTCMD ' + ups + ' ' + command, data => {
@@ -338,6 +426,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} username - Login with provided username
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     setUsername(username, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('USERNAME ' + username, data => {
@@ -347,6 +441,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} password - Login with provided password
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     setPassword(pwd, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('PASSWORD ' + pwd, data => {
@@ -356,6 +456,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * Gain master privileges for this connection. You have to login with a username/password combination first.
+     * @param  {string} ups - UPS identifier
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     master(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('MASTER ' + ups, data => {
@@ -365,6 +471,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * Execute FSD (you must be master to do this)
+     * @param  {string} ups - UPS identifier
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     fsd(ups, callback) {
         this.send('FSD ' + ups, data => {
             if (!data) {
@@ -384,6 +496,11 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * Send `HELP` command.
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     help(callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('HELP', data => {
@@ -393,6 +510,11 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * Send `VER` command.
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     ver(callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('VER', data => {
@@ -402,6 +524,11 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * Send `NETVER` command.
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     netVer(callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('NETVER', data => {
@@ -411,6 +538,12 @@ class Nut extends EventEmitter {
         });
     }
 
+    /**
+     * 
+     * @param  {string} ups - UPS identifier
+     * @param  {Function} [callback] - Provide either a callback function or use the returned promise
+     * @return {Promise<object>}
+     */
     listClients(ups, callback) {
         return this._callbackOrPromise(callback, callback => {
             this.send('LIST CLIENT ' + ups, data => {
