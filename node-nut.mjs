@@ -16,9 +16,15 @@ export class Nut extends EventEmitter {
         this._client.on('data', data => {
             this.dataInBuff += data;
 
-            if (this.dataInBuff.slice(-1) !== '\n') {
-                return;
-            }
+	        if (this.list) {
+                if (this.dataInBuff.indexOf('END LIST') === -1) {
+                    return;
+                }
+            } else {
+                if (this.dataInBuff.slice(-1) !== '\n') {
+                    return;
+                }
+	        }
 
             if (typeof (this.parseFunc) === 'undefined') {
                 this.status = 'idle';
@@ -26,6 +32,7 @@ export class Nut extends EventEmitter {
                 this.parseFunc(this.dataInBuff);
                 this.dataInBuff = '';
             }
+	        this.list = false;
         });
 
         this._client.on('error', err => {
@@ -47,6 +54,9 @@ export class Nut extends EventEmitter {
 
     send(cmd, parseFunc) {
         if (this.status === 'idle') {
+            if (cmd.startsWith('LIST')) {
+                this.list=true;
+            }
             this.status = 'waiting';
             this.parseFunc = parseFunc;
             this._client.write(cmd + '\n');
@@ -87,14 +97,15 @@ export class Nut extends EventEmitter {
         }
 
         const dataArray = data.split('\n');
-
         const vars = {};
         for (const line of dataArray) {
             if (line.indexOf('BEGIN LIST ' + listType) === 0) {
                 // ...
             } else if (line.indexOf(listType + ' ') === 0) {
                 const matches = re.exec(line);
-                vars[matches[1]] = matches[2];
+		        if (matches) {
+                   vars[matches[1]] = matches[2];
+		        }
             } else if (line.indexOf('END LIST ' + listType) === 0) {
                 callback(vars, null);
                 break;
@@ -409,7 +420,6 @@ export class Nut extends EventEmitter {
                 }
 
                 const dataArray = data.split('\n');
-
                 const re = /^CLIENT\s+.+\s+(.+)/;
                 const clients = [];
                 for (const line of dataArray) {
