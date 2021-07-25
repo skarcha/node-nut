@@ -5,11 +5,16 @@
   "contributors": [
     "Simon Christmann <simon@christmann.email>"
   ],
+  "module": "node-nut.mjs",
   "main": "node-nut.js",
   "files": [
     "node-nut.js"
   ],
-  "version": "1.0.3",
+  "type": "module",
+  "exports": {
+    "./nut": "./node-nut.mjs"
+  },
+  "version": "1.0.5",
   "homepage": "https://github.com/skarcha/node-nut",
   "repository": {
     "type": "git",
