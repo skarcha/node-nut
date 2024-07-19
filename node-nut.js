@@ -10,6 +10,8 @@ class Nut extends EventEmitter {
         this.status = 'idle';
         this.dataInBuff = '';
 
+        this._vars = {};
+
         this._client = new net.Socket();
         this._client.setEncoding('ascii');
 
@@ -88,15 +90,14 @@ class Nut extends EventEmitter {
 
         const dataArray = data.split('\n');
 
-        const vars = {};
         for (const line of dataArray) {
             if (line.indexOf('BEGIN LIST ' + listType) === 0) {
-                // ...
+                this._vars = {};
             } else if (line.indexOf(listType + ' ') === 0) {
                 const matches = re.exec(line);
-                vars[matches[1]] = matches[2];
+                this._vars[matches[1]] = matches[2];
             } else if (line.indexOf('END LIST ' + listType) === 0) {
-                callback(vars, null);
+                callback(this._vars, null);
                 break;
             } else if (line.indexOf('ERR') === 0) {
                 callback(null, line.slice(4));
